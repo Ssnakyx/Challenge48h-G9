@@ -40,7 +40,18 @@ class WeatherMeasurementOut(BaseModel):
 
 class PollutionMeasurementOut(BaseModel):
     id: int
-    pollutant_concentrations: Optional[list]
+    pm10_value: Optional[float]
+    pm10_score: Optional[float]
+    pm25_value: Optional[float]
+    pm25_score: Optional[float]
+    no2_value: Optional[float]
+    no2_score: Optional[float]
+    so2_value: Optional[float]
+    so2_score: Optional[float]
+    o3_value: Optional[float]
+    o3_score: Optional[float]
+    co_value: Optional[float]
+    co_score: Optional[float]
     score: Optional[float]
     date: date
     geo_point: GeoPointOut

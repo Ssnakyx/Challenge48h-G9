@@ -7,16 +7,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import List, Optional
 
-from sqlalchemy import (
-    JSON,
-    Date,
-    DateTime,
-    Float,
-    ForeignKey,
-    Integer,
-    String,
-    UniqueConstraint,
-)
+from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -91,15 +82,24 @@ class PollutionMeasurement(Base):
     """
 
     __tablename__ = "pollution_measurements"
-    __table_args__ = (
-        UniqueConstraint("geo_point_id", name="uq_pollution_geo_point"),
-    )
+    __table_args__ = (UniqueConstraint("geo_point_id", name="uq_pollution_geo_point"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     geo_point_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("geo_points.id", ondelete="CASCADE"), index=True
     )
-    pollutant_concentrations: Mapped[Optional[list]] = mapped_column(JSON)
+    pm10_value: Mapped[Optional[float]] = mapped_column(Float)
+    pm10_score: Mapped[Optional[float]] = mapped_column(Float)
+    pm25_value: Mapped[Optional[float]] = mapped_column(Float)
+    pm25_score: Mapped[Optional[float]] = mapped_column(Float)
+    no2_value: Mapped[Optional[float]] = mapped_column(Float)
+    no2_score: Mapped[Optional[float]] = mapped_column(Float)
+    so2_value: Mapped[Optional[float]] = mapped_column(Float)
+    so2_score: Mapped[Optional[float]] = mapped_column(Float)
+    o3_value: Mapped[Optional[float]] = mapped_column(Float)
+    o3_score: Mapped[Optional[float]] = mapped_column(Float)
+    co_value: Mapped[Optional[float]] = mapped_column(Float)
+    co_score: Mapped[Optional[float]] = mapped_column(Float)
     score: Mapped[Optional[float]] = mapped_column(Float)
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(

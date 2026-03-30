@@ -29,6 +29,15 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+POLLUTANT_COLUMN_MAP = {
+    "PM10": ("pm10_value", "pm10_score"),
+    "PM2.5": ("pm25_value", "pm25_score"),
+    "NO2": ("no2_value", "no2_score"),
+    "SO2": ("so2_value", "so2_score"),
+    "O3": ("o3_value", "o3_score"),
+    "CO": ("co_value", "co_score"),
+}
+POLLUTANT_FIELDS = {field for pair in POLLUTANT_COLUMN_MAP.values() for field in pair}
 
 def _parse_date(value: str | None) -> datetime:
     if not value:
@@ -49,6 +58,19 @@ def _safe_float(value):
     if pd.isna(value):
         return None
     return float(value)
+
+
+def _apply_pollutant_columns(pollution_obj, payload: list) -> None:
+    for field in POLLUTANT_FIELDS:
+        setattr(pollution_obj, field, None)
+    for entry in payload or []:
+        pollutant = (entry.get("pollutant") or "").upper()
+        mapping = POLLUTANT_COLUMN_MAP.get(pollutant)
+        if not mapping:
+            continue
+        value_col, score_col = mapping
+        setattr(pollution_obj, value_col, _safe_float(entry.get("value")))
+        setattr(pollution_obj, score_col, _safe_float(entry.get("score")))
 
 
 def _get_or_create_geo_point(session, row: pd.Series) -> GeoPoint:
@@ -107,7 +129,7 @@ def _persist_measurements(session, df: pd.DataFrame) -> None:
         )
         if not pollution:
             pollution = PollutionMeasurement(geo_point_id=geo_point.id)
-        pollution.pollutant_concentrations = row.get("pollutant_payload") or []
+        _apply_pollutant_columns(pollution, row.get("pollutant_payload") or [])
         pollution.score = _safe_float(row.get("composite_quality"))
         pollution.date = date_value
         session.add(pollution)

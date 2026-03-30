@@ -92,7 +92,7 @@ uvicorn app.main:app --reload
 ## Endpoints principaux
 
 - `GET /health` : statut + nombre de lignes météo / pollution.
-- `GET /pollution?station_code=FR01005&limit=24` : derniers scores composites (0 = mauvaise situation, 10 = très bon).
+- `GET /pollution?station_code=FR01005&limit=24` : derniers scores composites (0 = mauvaise situation, 10 = très bon) + colonnes par polluant (`pm10_value`, `pm10_score`, etc.) au lieu d'un JSON embarqué.
 - `GET /weather?station_code=FR01005&limit=24` : météo nettoyée + score météo (0 = météo défavorable).
 
 ## Calcul de l'indice
