@@ -1,0 +1,4 @@
+﻿lat;lon;geo_id_wmo;geo_id_wigos;name;reference_time;insert_time;validity_time;pmer;tend;cod_tend;dd;ff;t;td;u;vv;ww;w1;w2;n;nbas;hbas;cl;cm;ch;pres;niv_bar;geop;tend24;tn12;tn24;tx12;tx24;tminsol;sw;tw;raf10;rafper;per;etat_sol;ht_neige;ssfrai;perssfrai;rr1;rr3;rr6;rr12;rr24;phenspe1;phenspe2;phenspe3;phenspe4;nnuage1;ctype1;hnuage1;nnuage2;ctype2;hnuage2;nnuage3;ctype3;hnuage3;nnuage4;ctype4;hnuage4
+49.348;6.057;07001;0-20000-0-07001;METZ;;;2024-01-01T00:00:00Z;101500.0;40;2;220;5;272.15;269.15;82;10000;0;;;;;;101320;;;;;;270.15;;;8.0;8.0;-10;;0;;;0.2;0.6;0.8;1.0;1.5;;;;;;;2;;1200;;;;;;
+45.758;-4.85;07481;0-20000-0-07481;LYON;;;2024-01-01T00:00:00Z;101200.0;20;1;180;3;275.15;272.15;80;12000;0;;;;;;101030;;;;;;273.15;;;6.5;6.5;-10;;0;;;0.0;0.0;0.1;0.2;0.3;;;;;;;4;;1500;;;;;;
+49.348;6.057;07001;0-20000-0-07001;METZ;;;2024-01-01T01:00:00Z;101420.0;30;2;200;6;271.15;268.15;84;10000;0;;;;;;101250;;;;;;269.15;;;10.0;10.0;-10;;0;;;0.0;0.1;0.2;0.4;0.6;;;;;;;3;;800;;;;;;
