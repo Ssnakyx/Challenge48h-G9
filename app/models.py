@@ -66,7 +66,6 @@ class WeatherMeasurement(Base):
     wind_direction: Mapped[Optional[float]] = mapped_column(Float)
     wind_speed: Mapped[Optional[float]] = mapped_column(Float)
     pressure: Mapped[Optional[float]] = mapped_column(Float)
-    cloud_direction: Mapped[Optional[float]] = mapped_column(Float)
     score: Mapped[Optional[float]] = mapped_column(Float)
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(

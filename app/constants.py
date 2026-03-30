@@ -19,6 +19,16 @@ POLLUTANT_THRESHOLDS: Final[dict[str, float]] = {
     "CO": 10000.0,
 }
 
+# Derived helper thresholds (low / medium / alert) used for custom alerting logic.
+POLLUTANT_LEVEL_THRESHOLDS: Final[dict[str, dict[str, float]]] = {
+    pollutant: {
+        "low": threshold * 0.4,
+        "medium": threshold * 0.7,
+        "alert": threshold,
+    }
+    for pollutant, threshold in POLLUTANT_THRESHOLDS.items()
+}
+
 # Weight assigned to each pollutant when building the composite score.
 POLLUTANT_WEIGHTS: Final[dict[str, float]] = {
     "PM10": 0.22,
