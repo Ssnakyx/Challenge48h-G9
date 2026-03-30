@@ -242,8 +242,24 @@ def run_pipeline(
         window_start = window_end - pd.Timedelta(hours=window_hours)
         pollution_raw = client.fetch_latest_pollution_measurements(window_hours=window_hours)
     else:
-        start_date = start_date or _parse_date(settings.default_start_date)
+        history_window = pd.Timedelta(days=settings.max_history_days)
         end_date = end_date or _parse_date(settings.default_end_date)
+        earliest_allowed = end_date - history_window
+        if start_date is None:
+            if settings.default_start_date:
+                start_candidate = _parse_date(settings.default_start_date)
+            else:
+                start_candidate = earliest_allowed
+        else:
+            start_candidate = start_date
+        if start_candidate < earliest_allowed:
+            logger.info(
+                "Clamping start_date to %s to respect the %s-day retention policy.",
+                earliest_allowed,
+                settings.max_history_days,
+            )
+            start_candidate = earliest_allowed
+        start_date = start_candidate
         if start_date > end_date:
             raise ValueError("The start date must be before the end date.")
         window_start = _ensure_utc_timestamp(start_date)

@@ -46,10 +46,11 @@ Variables importantes :
 - `POLLUTION_BUCKET` / `POLLUTION_PREFIX` : bucket S3 data.gouv à lister.
 - `POLLUTION_METADATA_URL` : XLS "Dataset D" pour récupérer les coordonnées des stations.
 - `WEATHER_RESOURCE_URL` : archive `synop_YYYY.csv.gz` (choisir l'année qui couvre la fenêtre visée, ex. `synop_2026.csv.gz` pour des données temps réel).
-- `DEFAULT_START_DATE` / `DEFAULT_END_DATE` : fenêtre temporelle (UTC) utilisée quand on n'indique rien à la CLI.
+- `DEFAULT_START_DATE` / `DEFAULT_END_DATE` : bornes temporelles historiques (UTC) facultatives. Lorsqu'elles sont omises, la pipeline se cale automatiquement sur "aujourd'hui" et remonte jusqu'à 30 jours en arrière.
 - `MAX_DISTANCE_KM` : rayon maximal pour associer une station météo à une station pollution.
 - `FORECAST_HORIZON_HOURS` : horizon de prévision linéaire.
 - `REALTIME_WINDOW_HOURS` : taille de la fenêtre glissante (en heures) utilisée quand on récupère les dernières données temps réel.
+- `MAX_HISTORY_DAYS` : rétention maximale autorisée pour l'ingestion historique (par défaut 30 jours).
 
 ## Installation locale
 
@@ -72,6 +73,8 @@ Cela :
 2. joint pollution + météo ;
 3. calcule l'indice ;
 4. alimente les tables `stations`, `impact_indices`, `impact_forecasts`.
+
+Sans paramètres, la pipeline positionne automatiquement `end_date` sur le jour courant et limite la rétention historique à `MAX_HISTORY_DAYS` (30 jours par défaut). Toute requête plus longue est tronquée pour respecter cette contrainte.
 
 Mode temps réel : sans date (ou avec `--realtime`) la pipeline télécharge automatiquement les derniers fichiers publiés et filtre sur la fenêtre définie par `REALTIME_WINDOW_HOURS` :
 

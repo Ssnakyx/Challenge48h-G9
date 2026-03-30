@@ -50,6 +50,10 @@ class Settings(BaseSettings):
         default=None,
         alias="DEFAULT_END_DATE",
     )
+    max_history_days: int = Field(
+        default=30,
+        alias="MAX_HISTORY_DAYS",
+    )
     max_distance_km: float = Field(default=75.0, alias="MAX_DISTANCE_KM")
     forecast_horizon_hours: int = Field(default=6, alias="FORECAST_HORIZON_HOURS")
     realtime_window_hours: int = Field(default=24, alias="REALTIME_WINDOW_HOURS")
