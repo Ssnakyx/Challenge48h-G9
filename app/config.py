@@ -51,7 +51,7 @@ class Settings(BaseSettings):
         alias="DEFAULT_END_DATE",
     )
     max_history_days: int = Field(
-        default=30,
+        default=15,
         alias="MAX_HISTORY_DAYS",
     )
     max_distance_km: float = Field(default=75.0, alias="MAX_DISTANCE_KM")
