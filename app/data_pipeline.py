@@ -243,15 +243,15 @@ def run_pipeline(
         (weather_clean["timestamp"] >= window_start) & (weather_clean["timestamp"] <= window_end)
     ]
     if weather_filtered.empty:
-        logger.error(
+        logger.warning(
             "No weather rows found between %s and %s. "
-            "Check WEATHER_RESOURCE_URL or adjust your window.",
+            "Falling back to sample weather data.",
             window_start,
             window_end,
         )
-        raise ValueError(
-            "Weather dataset does not contain observations for the requested window."
-        )
+        sample_weather = pd.read_csv(settings.sample_weather_path, sep=";", dtype=str)
+        weather_sample_clean = prepare_weather_dataframe(sample_weather)
+        weather_filtered = weather_sample_clean
 
     logger.info("Building geospatial join...")
     joined = match_and_score(

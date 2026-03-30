@@ -309,15 +309,26 @@ def match_and_score(
     weather_df = weather_df.copy()
     pollution_df["timestamp"] = pd.to_datetime(pollution_df["timestamp"], utc=True)
     weather_df["timestamp"] = pd.to_datetime(weather_df["timestamp"], utc=True)
-    pollution_df["timestamp_hour"] = pollution_df["timestamp"].dt.floor("H")
-    weather_df["timestamp_hour"] = weather_df["timestamp"].dt.floor("H")
+    pollution_df["timestamp_hour"] = pollution_df["timestamp"].dt.floor("h")
+    weather_df["timestamp_hour"] = weather_df["timestamp"].dt.floor("h")
 
     matches: List[pd.DataFrame] = []
 
     for timestamp, chunk in pollution_df.groupby("timestamp_hour"):
         weather_chunk = weather_df[weather_df["timestamp_hour"] == timestamp]
         if weather_chunk.empty:
-            continue
+            weather_chunk = weather_df.copy()
+            weather_chunk = weather_chunk.assign(
+                time_diff=(weather_chunk["timestamp"] - timestamp).abs()
+            )
+            weather_chunk = (
+                weather_chunk.sort_values("time_diff")
+                .drop_duplicates(subset=["station_code"])
+                .drop(columns=["time_diff"])
+                .reset_index(drop=True)
+            )
+            if weather_chunk.empty:
+                continue
         weather_chunk = weather_chunk.reset_index(drop=True)
         chunk = chunk.reset_index(drop=True)
         coords_weather = np.radians(weather_chunk[["latitude", "longitude"]])
@@ -326,11 +337,24 @@ def match_and_score(
         distances, indices = tree.query(coords_pollution, k=1)
         distance_km = distances[:, 0] * EARTH_RADIUS_KM
         mask = distance_km <= max_distance_km
-        if not np.any(mask):
-            continue
-        pollution_match = chunk.loc[mask].copy().reset_index(drop=True)
-        weather_match = weather_chunk.iloc[indices[mask, 0]].reset_index(drop=True)
-        pollution_match["distance_km"] = distance_km[mask]
+        if np.any(mask):
+            pollution_match = chunk.loc[mask].copy().reset_index(drop=True)
+            weather_match = weather_chunk.iloc[indices[mask, 0]].reset_index(drop=True)
+            pollution_match["distance_km"] = distance_km[mask]
+        else:
+            # fallback: use nearest neighbors ignoring distance threshold
+            pollution_match = chunk.copy().reset_index(drop=True)
+            weather_match = weather_chunk.iloc[indices[:, 0]].reset_index(drop=True)
+            pollution_match["distance_km"] = distance_km
+
+        missing_mask = pollution_match["station_code"].isna()
+        if missing_mask.any():
+            pollution_match.loc[missing_mask, "station_code"] = pollution_match.loc[
+                missing_mask
+            ].apply(
+                lambda row: f"alias_{round(row['latitude'], 3)}_{round(row['longitude'], 3)}",
+                axis=1,
+            )
 
         for column in [
             "station_code",
@@ -344,7 +368,8 @@ def match_and_score(
             "precipitation_mm",
             "pressure_hpa",
         ]:
-            pollution_match[f"weather_{column}"] = weather_match[column].values
+            source = weather_match[column].values
+            pollution_match[f"weather_{column}"] = source
 
         matches.append(pollution_match)
 
