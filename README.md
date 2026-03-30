@@ -5,9 +5,9 @@ Ce repo propose un pipeline de données et une API en Python/FastAPI qui :
 - télécharge les mesures horaires de polluants (flux E2) ainsi que les métadonnées stations publiées sur data.gouv.fr ;
 - récupère les observations météo SYNOP (Météo France) sur la même période ;
 - effectue une jointure spatio-temporelle station par station via une recherche du voisin météo le plus proche (BallTree en coordonnées Haversine) ;
-- calcule un indice composite (pollution + conditions météo) avec pondération configurable et catégorisation (low/moderate/high/critical) ;
-- stocke le résultat + les prévisions linéaires dans une base SQLite ;
-- expose les données aux devs via une API FastAPI (`/health`, `/indices`, `/stations/{code}/indices`, `/forecasts`).
+- calcule un indice composite (pollution + conditions météo) avec pondération configurable ;
+- stocke uniquement trois tables simplifiées : `geo_points` (coordonnées + horodatage), `weather_measurements` (table #1) et `pollution_measurements` (table #2) liées entre elles ;
+- expose les données retenues via une API FastAPI (`/health`, `/pollution`, `/weather`).
 
 ## Structure
 
@@ -18,9 +18,9 @@ app/
   data_clients.py    # téléchargement des fichiers data.gouv.fr
   data_pipeline.py   # orchestration : ingestion -> processing -> persistance
   db.py              # création du moteur SQLAlchemy
-  forecasting.py     # régression linéaire simple pour la prévision
-  main.py            # API FastAPI
-  models.py          # tables SQLite (stations, indices, prévisions)
+  forecasting.py     # (legacy) helpers de régression simple si besoin
+  main.py            # API FastAPI exposant les trois tables
+  models.py          # tables SQLite (geo_points + météo + pollution)
   processors.py      # nettoyage pandas + jointure géospatiale + scoring
   schemas.py         # schémas Pydantic renvoyés par l'API
 ```
@@ -71,8 +71,8 @@ python -m app.data_pipeline --start-date 2024-01-01 --end-date 2024-01-03
 Cela :
 1. télécharge quelques jours de données (max 7 fichiers CSV jour par jour pour limiter le volume) ;
 2. joint pollution + météo ;
-3. calcule l'indice ;
-4. alimente les tables `stations`, `impact_indices`, `impact_forecasts`.
+3. calcule l'indice composite borné `[0, 10]` (10 = conditions favorables) ;
+4. peuple `geo_points`, `weather_measurements`, `pollution_measurements`.
 
 Sans paramètres, la pipeline positionne automatiquement `end_date` sur le jour courant et limite la rétention historique à `MAX_HISTORY_DAYS` (30 jours par défaut). Toute requête plus longue est tronquée pour respecter cette contrainte.
 
@@ -91,18 +91,16 @@ uvicorn app.main:app --reload
 
 ## Endpoints principaux
 
-- `GET /health` : statut + nombre d'indices/prévisions stockés.
-- `GET /indices?station_code=FR01005&limit=24` : derniers indices calculés (filtrable par niveau d'impact).
-- `GET /stations/{code}/indices` : historique pour une station donnée.
-- `GET /forecasts?station_code=FR01005` : prévisions issues de la régression linéaire simple.
+- `GET /health` : statut + nombre de lignes météo / pollution.
+- `GET /pollution?station_code=FR01005&limit=24` : derniers scores composites (0 = mauvaise situation, 10 = très bon).
+- `GET /weather?station_code=FR01005&limit=24` : météo nettoyée + score météo (0 = météo défavorable).
 
 ## Calcul de l'indice
 
 1. Chaque mesure horaire est normalisée via les seuils réglementaires (`constants.POLLUTANT_THRESHOLDS`).
 2. La somme pondérée (`constants.POLLUTANT_WEIGHTS`) donne un score pollution par station/heure.
 3. Les conditions météo (température, humidité, vent, pluie) modulent le risque via `WEATHER_WEIGHTS` (vent/pluie réduisent l'impact car elles dispersent / lavent les polluants).
-4. L'indice final est borné à `[0, 100]` et catégorisé : `low`, `moderate`, `high`, `critical`.
-5. Bonus : pour chaque station on entraîne une régression linéaire simple `indice = a * temps + b` pour projeter `N` heures dans le futur.
+4. L'indice final (pollution + météo) est borné à `[0, 100]` puis converti en score qualité `[0, 10]` : `10` = conditions très favorables, `0` = conditions météo/pollution dégradées. Le score météo dédié est également normalisé sur `[0, 10]`.
 
 Tous les paramètres (poids, seuils, rayon géographique, horizon de prévision) peuvent être ajustés dans `constants.py` ou via l'environnement. Le fichier SQLite peut être inspecté avec `sqlite3 data/air_quality.db ".tables"` une fois la pipeline exécutée.
 

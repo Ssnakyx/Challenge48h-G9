@@ -4,7 +4,7 @@ Shared constants for the pollution/weather impact pipeline.
 
 from __future__ import annotations
 
-from typing import Final, List, Tuple
+from typing import Final, List
 
 # Conversion constants
 EARTH_RADIUS_KM: Final[float] = 6371.0
@@ -37,14 +37,6 @@ WEATHER_WEIGHTS: Final[dict[str, float]] = {
     "wind": -0.2,
     "precipitation": -0.1,
 }
-
-# Buckets describing how the final composite score should be interpreted.
-IMPACT_LEVELS: Final[List[Tuple[float, float, str]]] = [
-    (0, 25, "low"),
-    (25, 50, "moderate"),
-    (50, 75, "high"),
-    (75, 1e9, "critical"),
-]
 
 # Default column names that we look for when parsing source files.
 POLLUTION_COLUMNS: Final[dict[str, str]] = {

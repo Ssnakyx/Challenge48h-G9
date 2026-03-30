@@ -16,7 +16,6 @@ from sklearn.neighbors import BallTree
 
 from .constants import (
     EARTH_RADIUS_KM,
-    IMPACT_LEVELS,
     METADATA_LATITUDE_KEYS,
     METADATA_LONGITUDE_KEYS,
     POLLUTANT_THRESHOLDS,
@@ -26,6 +25,9 @@ from .constants import (
 )
 
 logger = logging.getLogger(__name__)
+
+WEATHER_SCORE_MIN = -0.3
+WEATHER_SCORE_MAX = 0.7
 
 
 def _normalize_column_name(value: str) -> str:
@@ -288,13 +290,6 @@ def _compute_weather_score(row: pd.Series) -> float:
     return float(sum(components))
 
 
-def _classify_index(value: float) -> str:
-    for start, end, label in IMPACT_LEVELS:
-        if start <= value < end:
-            return label
-    return IMPACT_LEVELS[-1][2]
-
-
 def match_and_score(
     pollution_df: pd.DataFrame,
     weather_df: pd.DataFrame,
@@ -382,5 +377,10 @@ def match_and_score(
         (joined["pollution_score"] * 0.65) + (joined["weather_score"] * 0.35)
     ) * 20
     joined["composite_index"] = joined["composite_index"].clip(0, 100)
-    joined["impact_level"] = joined["composite_index"].apply(_classify_index)
+    joined["weather_quality"] = (
+        (WEATHER_SCORE_MAX - joined["weather_score"])
+        / (WEATHER_SCORE_MAX - WEATHER_SCORE_MIN)
+    ) * 10.0
+    joined["weather_quality"] = joined["weather_quality"].clip(0, 10)
+    joined["composite_quality"] = ((100.0 - joined["composite_index"]) / 10.0).clip(0, 10)
     return joined.drop(columns=["timestamp_hour"])

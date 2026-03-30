@@ -1,5 +1,5 @@
 """
-Command line entry point that drives the ingestion, processing and persistence.
+Command line entry point that drives ingestion, processing and persistence.
 """
 
 from __future__ import annotations
@@ -7,15 +7,14 @@ from __future__ import annotations
 import argparse
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Iterable, Optional
+from typing import Optional
 
 import pandas as pd
 
 from .config import get_settings
 from .data_clients import DataGouvClient
 from .db import SessionLocal, engine
-from .forecasting import build_forecasts
-from .models import Base, ImpactForecast, ImpactIndex, ImpactPollutant, Station
+from .models import Base, GeoPoint, PollutionMeasurement, WeatherMeasurement
 from .processors import (
     aggregate_pollution,
     attach_station_metadata,
@@ -52,174 +51,88 @@ def _safe_float(value):
     return float(value)
 
 
-def _load_station_cache(session, codes: Iterable[str]) -> Dict[str, Station]:
-    codes = {code for code in codes if code}
-    if not codes:
-        return {}
-    existing = (
-        session.query(Station)
-        .filter(Station.code.in_(list(codes)))
-        .all()
+def _get_or_create_geo_point(session, row: pd.Series) -> GeoPoint:
+    timestamp = pd.to_datetime(row["timestamp"], utc=True).to_pydatetime()
+    station_code = row.get("station_code")
+    geo_point = (
+        session.query(GeoPoint)
+        .filter(
+            GeoPoint.station_code == station_code,
+            GeoPoint.timestamp == timestamp,
+        )
+        .one_or_none()
     )
-    return {station.code: station for station in existing}
-
-
-def _ensure_station(session, cache: dict, row: pd.Series) -> Station:
-    code = row["station_code"]
-    station = cache.get(code)
-    if station:
+    if geo_point:
         updated = False
-        if row.get("station_name") and station.name != row["station_name"]:
-            station.name = row["station_name"]
-            updated = True
-        if row.get("region") and station.region != row["region"]:
-            station.region = row["region"]
-            updated = True
         lat = _safe_float(row.get("latitude"))
         lon = _safe_float(row.get("longitude"))
-        if lat is not None and station.latitude != lat:
-            station.latitude = lat
+        name = row.get("station_name")
+        if lat is not None and geo_point.latitude != lat:
+            geo_point.latitude = lat
             updated = True
-        if lon is not None and station.longitude != lon:
-            station.longitude = lon
+        if lon is not None and geo_point.longitude != lon:
+            geo_point.longitude = lon
+            updated = True
+        if name and geo_point.station_name != name:
+            geo_point.station_name = name
             updated = True
         if updated:
-            session.add(station)
-        return station
-    station = Station(
-        code=code,
-        name=row.get("station_name"),
-        station_type="pollution",
+            session.add(geo_point)
+        return geo_point
+
+    geo_point = GeoPoint(
+        station_code=station_code,
+        station_name=row.get("station_name"),
         latitude=_safe_float(row.get("latitude")),
         longitude=_safe_float(row.get("longitude")),
-        region=row.get("region"),
+        timestamp=timestamp,
+        date=timestamp.date(),
     )
-    session.add(station)
+    session.add(geo_point)
     session.flush()
-    cache[code] = station
-    return station
+    return geo_point
 
 
-def _persist_indices(session, df: pd.DataFrame) -> Dict[str, Station]:
-    cache = _load_station_cache(session, df["station_code"].unique())
+def _persist_measurements(session, df: pd.DataFrame) -> None:
     inserted = 0
     for _, row in df.iterrows():
-        station = _ensure_station(session, cache, row)
+        geo_point = _get_or_create_geo_point(session, row)
         timestamp = pd.to_datetime(row["timestamp"], utc=True).to_pydatetime()
-        existing = (
-            session.query(ImpactIndex)
-            .filter(
-                ImpactIndex.station_id == station.id,
-                ImpactIndex.timestamp == timestamp,
-            )
+        date_value = timestamp.date()
+
+        pollution = (
+            session.query(PollutionMeasurement)
+            .filter(PollutionMeasurement.geo_point_id == geo_point.id)
             .one_or_none()
         )
-        pollutant_details = row.get("pollutant_payload") or []
-        payload = ImpactIndex(
-            station_id=station.id,
-            timestamp=timestamp,
-            composite_index=_safe_float(row["composite_index"]) or 0.0,
-            pollution_score=_safe_float(row["pollution_score"]) or 0.0,
-            weather_score=_safe_float(row["weather_score"]) or 0.0,
-            impact_level=row.get("impact_level") or "unknown",
-            dominant_pollutant=row.get("dominant_pollutant"),
-            dominant_value=_safe_float(row.get("dominant_value")),
-            pollutant_unit=row.get("pollutant_unit"),
-            weather_station_code=row.get("weather_station_code"),
-            weather_station_name=row.get("weather_station_name"),
-            weather_latitude=_safe_float(row.get("weather_latitude")),
-            weather_longitude=_safe_float(row.get("weather_longitude")),
-            distance_km=_safe_float(row.get("distance_km")),
-            weather_payload={
-                "temperature_c": _safe_float(row.get("weather_temperature_c")),
-                "humidity": _safe_float(row.get("weather_humidity")),
-                "wind_speed_ms": _safe_float(row.get("weather_wind_speed_ms")),
-                "wind_direction": _safe_float(row.get("weather_wind_direction")),
-                "precipitation_mm": _safe_float(row.get("weather_precipitation_mm")),
-                "pressure_hpa": _safe_float(row.get("weather_pressure_hpa")),
-            },
-        )
-        if existing:
-            for field in [
-                "composite_index",
-                "pollution_score",
-                "weather_score",
-                "impact_level",
-                "dominant_pollutant",
-                "dominant_value",
-                "pollutant_unit",
-                "weather_station_code",
-                "weather_station_name",
-                "weather_latitude",
-                "weather_longitude",
-                "distance_km",
-                "weather_payload",
-            ]:
-                setattr(existing, field, getattr(payload, field))
-            target = existing
-        else:
-            session.add(payload)
-            session.flush()
-            target = payload
-            inserted += 1
-        _upsert_pollutants(session, target, pollutant_details)
-    session.commit()
-    logger.info("Persisted %s new impact indices", inserted)
-    return cache
+        if not pollution:
+            pollution = PollutionMeasurement(geo_point_id=geo_point.id)
+        pollution.pollutant_concentrations = row.get("pollutant_payload") or []
+        pollution.score = _safe_float(row.get("composite_quality"))
+        pollution.date = date_value
+        session.add(pollution)
 
-
-def _persist_forecasts(session, df: pd.DataFrame, cache: Dict[str, Station]) -> None:
-    if df.empty:
-        return
-    inserted = 0
-    for _, row in df.iterrows():
-        station = cache.get(row["station_code"])
-        if not station:
-            continue
-        target_timestamp = pd.to_datetime(row["target_timestamp"], utc=True).to_pydatetime()
-        existing = (
-            session.query(ImpactForecast)
-            .filter(
-                ImpactForecast.station_id == station.id,
-                ImpactForecast.target_timestamp == target_timestamp,
-            )
+        weather = (
+            session.query(WeatherMeasurement)
+            .filter(WeatherMeasurement.geo_point_id == geo_point.id)
             .one_or_none()
         )
-        payload = ImpactForecast(
-            station_id=station.id,
-            target_timestamp=target_timestamp,
-            predicted_index=_safe_float(row["predicted_index"]) or 0.0,
-            horizon_hours=int(row["horizon_hours"]),
-            model_version=row.get("model_version") or "linreg-1",
-        )
-        if existing:
-            existing.predicted_index = payload.predicted_index
-            existing.horizon_hours = payload.horizon_hours
-            existing.model_version = payload.model_version
-        else:
-            session.add(payload)
-            inserted += 1
+        if not weather:
+            weather = WeatherMeasurement(geo_point_id=geo_point.id)
+        weather.temperature_real = _safe_float(row.get("weather_temperature_c"))
+        weather.temperature_feels_like = _safe_float(row.get("weather_temperature_c"))
+        weather.humidity = _safe_float(row.get("weather_humidity"))
+        weather.wind_direction = _safe_float(row.get("weather_wind_direction"))
+        weather.wind_speed = _safe_float(row.get("weather_wind_speed_ms"))
+        weather.pressure = _safe_float(row.get("weather_pressure_hpa"))
+        weather.cloud_direction = _safe_float(row.get("weather_wind_direction"))
+        weather.score = _safe_float(row.get("weather_quality"))
+        weather.date = date_value
+        session.add(weather)
+
+        inserted += 1
     session.commit()
-    logger.info("Persisted %s forecasts", inserted)
-
-
-def _upsert_pollutants(
-    session, impact_index: ImpactIndex, payload: Optional[list]
-) -> None:
-    session.query(ImpactPollutant).filter(
-        ImpactPollutant.impact_index_id == impact_index.id
-    ).delete()
-    for entry in payload or []:
-        pollutant = ImpactPollutant(
-            impact_index_id=impact_index.id,
-            pollutant=entry.get("pollutant"),
-            value=_safe_float(entry.get("value")),
-            unit=entry.get("unit"),
-            weight=_safe_float(entry.get("weight")),
-            threshold=_safe_float(entry.get("threshold")),
-            score=_safe_float(entry.get("score")),
-        )
-        session.add(pollutant)
+    logger.info("Persisted %s merged measurements", inserted)
 
 
 def run_pipeline(
@@ -302,13 +215,9 @@ def run_pipeline(
         logger.warning("No rows matched between pollution and weather datasets.")
         return
 
-    logger.info("Generating forecasts...")
-    forecasts = build_forecasts(joined, settings.forecast_horizon_hours)
-
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as session:
-        cache = _persist_indices(session, joined)
-        _persist_forecasts(session, forecasts, cache)
+        _persist_measurements(session, joined)
 
 
 def parse_args():

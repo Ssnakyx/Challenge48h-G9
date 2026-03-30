@@ -1,18 +1,18 @@
 """
-SQLAlchemy models backing the Postgres database.
+SQLAlchemy models describing the simplified schema requested by the brief.
 """
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional
 
 from sqlalchemy import (
     JSON,
+    Date,
     DateTime,
     Float,
     ForeignKey,
-    Index,
     Integer,
     String,
     UniqueConstraint,
@@ -25,104 +25,85 @@ class Base(DeclarativeBase):
     pass
 
 
-class Station(Base):
-    __tablename__ = "stations"
-    __table_args__ = (UniqueConstraint("code", name="uq_station_code"),)
+class GeoPoint(Base):
+    """
+    Table #3 - geographic point and timestamp that link weather and pollution datasets.
+    """
+
+    __tablename__ = "geo_points"
+    __table_args__ = (
+        UniqueConstraint(
+            "station_code",
+            "timestamp",
+            name="uq_geo_point_station_timestamp",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255))
-    station_type: Mapped[str] = mapped_column(String(32), default="pollution")
+    station_code: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+    station_name: Mapped[Optional[str]] = mapped_column(String(255))
     latitude: Mapped[Optional[float]] = mapped_column(Float)
     longitude: Mapped[Optional[float]] = mapped_column(Float)
-    region: Mapped[Optional[str]] = mapped_column(String(128))
-    extra: Mapped[Optional[dict]] = mapped_column(JSON)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    indices: Mapped[List["ImpactIndex"]] = relationship(
-        back_populates="station", cascade="all, delete-orphan"
+    weather_measurements: Mapped[List["WeatherMeasurement"]] = relationship(
+        back_populates="geo_point", cascade="all, delete-orphan"
     )
-    forecasts: Mapped[List["ImpactForecast"]] = relationship(
-        back_populates="station", cascade="all, delete-orphan"
-    )
-
-
-class ImpactIndex(Base):
-    __tablename__ = "impact_indices"
-    __table_args__ = (
-        UniqueConstraint("station_id", "timestamp", name="uq_station_timestamp"),
-        Index("ix_impact_indices_timestamp", "timestamp"),
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    station_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("stations.id", ondelete="CASCADE"), index=True
-    )
-    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    composite_index: Mapped[float] = mapped_column(Float, nullable=False)
-    pollution_score: Mapped[float] = mapped_column(Float, nullable=False)
-    weather_score: Mapped[float] = mapped_column(Float, nullable=False)
-    impact_level: Mapped[str] = mapped_column(String(32), nullable=False)
-    dominant_pollutant: Mapped[Optional[str]] = mapped_column(String(32))
-    dominant_value: Mapped[Optional[float]] = mapped_column(Float)
-    pollutant_unit: Mapped[Optional[str]] = mapped_column(String(32))
-    weather_station_code: Mapped[Optional[str]] = mapped_column(String(32))
-    weather_station_name: Mapped[Optional[str]] = mapped_column(String(255))
-    weather_latitude: Mapped[Optional[float]] = mapped_column(Float)
-    weather_longitude: Mapped[Optional[float]] = mapped_column(Float)
-    distance_km: Mapped[Optional[float]] = mapped_column(Float)
-    weather_payload: Mapped[Optional[dict]] = mapped_column(JSON)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-    station: Mapped[Station] = relationship(back_populates="indices")
-    pollutants: Mapped[List["ImpactPollutant"]] = relationship(
-        back_populates="impact_index", cascade="all, delete-orphan"
+    pollution_measurements: Mapped[List["PollutionMeasurement"]] = relationship(
+        back_populates="geo_point", cascade="all, delete-orphan"
     )
 
 
-class ImpactForecast(Base):
-    __tablename__ = "impact_forecasts"
-    __table_args__ = (
-        UniqueConstraint("station_id", "target_timestamp", name="uq_forecast_target"),
-        Index("ix_forecasts_target_timestamp", "target_timestamp"),
-    )
+class WeatherMeasurement(Base):
+    """
+    Table #1 - weather snapshot aligned to the geo point.
+    """
+
+    __tablename__ = "weather_measurements"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    station_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("stations.id", ondelete="CASCADE"), nullable=False
+    geo_point_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("geo_points.id", ondelete="CASCADE"), index=True
     )
-    target_timestamp: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-    predicted_index: Mapped[float] = mapped_column(Float, nullable=False)
-    horizon_hours: Mapped[int] = mapped_column(Integer, nullable=False)
-    model_version: Mapped[str] = mapped_column(String(64), default="linreg-1")
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-    station: Mapped[Station] = relationship(back_populates="forecasts")
-
-
-class ImpactPollutant(Base):
-    __tablename__ = "impact_pollutants"
-    __table_args__ = (
-        Index("ix_pollutants_pollutant", "pollutant"),
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    impact_index_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("impact_indices.id", ondelete="CASCADE"), index=True
-    )
-    pollutant: Mapped[str] = mapped_column(String(64), nullable=False)
-    value: Mapped[Optional[float]] = mapped_column(Float)
-    unit: Mapped[Optional[str]] = mapped_column(String(32))
-    weight: Mapped[Optional[float]] = mapped_column(Float)
-    threshold: Mapped[Optional[float]] = mapped_column(Float)
+    temperature_real: Mapped[Optional[float]] = mapped_column(Float)
+    temperature_feels_like: Mapped[Optional[float]] = mapped_column(Float)
+    humidity: Mapped[Optional[float]] = mapped_column(Float)
+    wind_direction: Mapped[Optional[float]] = mapped_column(Float)
+    wind_speed: Mapped[Optional[float]] = mapped_column(Float)
+    pressure: Mapped[Optional[float]] = mapped_column(Float)
+    cloud_direction: Mapped[Optional[float]] = mapped_column(Float)
     score: Mapped[Optional[float]] = mapped_column(Float)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
-    impact_index: Mapped[ImpactIndex] = relationship(back_populates="pollutants")
+    geo_point: Mapped[GeoPoint] = relationship(back_populates="weather_measurements")
+
+
+class PollutionMeasurement(Base):
+    """
+    Table #2 - pollution payload + composite score (0 -> mauvais, 10 -> bon).
+    """
+
+    __tablename__ = "pollution_measurements"
+    __table_args__ = (
+        UniqueConstraint("geo_point_id", name="uq_pollution_geo_point"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    geo_point_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("geo_points.id", ondelete="CASCADE"), index=True
+    )
+    pollutant_concentrations: Mapped[Optional[list]] = mapped_column(JSON)
+    score: Mapped[Optional[float]] = mapped_column(Float)
+    date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    geo_point: Mapped[GeoPoint] = relationship(back_populates="pollution_measurements")
