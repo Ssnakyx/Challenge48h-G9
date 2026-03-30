@@ -4,7 +4,7 @@
         {# Header #}
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
             <div>
-                <div class="panel-eyebrow">Live Monitoring</div>
+                <div class="panel-eyebrow">Surveillance en direct</div>
                 <div class="panel-station-name" id="panel-station-name">Downtown Station</div>
             </div>
             <button class="panel-close" onclick="closePanel()">
@@ -24,12 +24,12 @@
                     <span style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(192,243,234,0.3)">0</span>
                     <span style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(192,243,234,0.3)">200</span>
                 </div>
-                <div class="aqi-desc" id="panel-aqi-desc">Sensitive groups should limit outdoor exertion.</div>
+                <div class="aqi-desc" id="panel-aqi-desc">Les groupes sensibles devraient limiter l'effort en extérieur.</div>
             </div>
         </div>
 
         {# Weather #}
-        <div class="section-label">Weather Snapshot</div>
+        <div class="section-label">Aperçu Météo</div>
         <div class="weather-grid" style="margin-bottom:24px;">
             <div class="weather-card">
                 <div class="weather-icon material-symbols-outlined">thermostat</div>
@@ -39,23 +39,23 @@
             <div class="weather-card">
                 <div class="weather-icon material-symbols-outlined">humidity_percentage</div>
                 <div class="weather-value" id="panel-humidity">45%</div>
-                <div class="weather-key">Humidity</div>
+                <div class="weather-key">Humidité</div>
             </div>
             <div class="weather-card">
                 <div class="weather-icon material-symbols-outlined">air</div>
                 <div class="weather-value" id="panel-wind">12k/h</div>
-                <div class="weather-key">Wind</div>
+                <div class="weather-key">Vent</div>
             </div>
         </div>
 
         {# Pollutants #}
-        <div class="section-label">Pollutants Breakdown</div>
+        <div class="section-label">Détail des Polluants</div>
         <div class="pollutant-row">
             <div style="display:flex;align-items:center;gap:12px;">
                 <div class="pollutant-badge" style="background:rgba(244,63,94,0.1);color:#f43f5e">PM</div>
                 <div>
                     <div class="pollutant-name">PM2.5</div>
-                    <div class="pollutant-type">Fine Particles</div>
+                    <div class="pollutant-type">Particules fines</div>
                 </div>
             </div>
             <div style="text-align:right;">
@@ -68,7 +68,7 @@
                 <div class="pollutant-badge" style="background:rgba(251,191,36,0.1);color:#fbbf24">NO</div>
                 <div>
                     <div class="pollutant-name">NO₂</div>
-                    <div class="pollutant-type">Nitrogen Dioxide</div>
+                    <div class="pollutant-type">Dioxyde d'azote</div>
                 </div>
             </div>
             <div style="text-align:right;">
@@ -81,7 +81,7 @@
                 <div class="pollutant-badge" style="background:rgba(26,179,148,0.1);color:#1ab394">CO</div>
                 <div>
                     <div class="pollutant-name">CO</div>
-                    <div class="pollutant-type">Carbon Monoxide</div>
+                    <div class="pollutant-type">Monoxyde de carbone</div>
                 </div>
             </div>
             <div style="text-align:right;">
@@ -92,7 +92,7 @@
 
         <a class="btn-history" href="#">
             <span class="material-symbols-outlined" style="font-size:16px">history</span>
-            View Detailed History
+            Voir l'historique détaillé
         </a>
     </div>
 </aside>
