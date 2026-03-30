@@ -1,0 +1,213 @@
+{# ── Scripts: Particles + Leaflet + Panel logic ── #}
+<script>
+/* ── Particle system ── */
+(function () {
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+
+    function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function createParticle() {
+        return {
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.5 + 0.3,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: (Math.random() - 0.5) * 0.25,
+            alpha: Math.random() * 0.4 + 0.1,
+        };
+    }
+    for (let i = 0; i < 90; i++) particles.push(createParticle());
+
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(26,179,148,${p.alpha})`;
+            ctx.fill();
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0 || p.x > W) p.vx *= -1;
+            if (p.y < 0 || p.y > H) p.vy *= -1;
+        });
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 100) {
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = `rgba(26,179,148,${0.08 * (1 - dist/100)})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+})();
+
+/* ── Filter pills ── */
+document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', function () {
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+/* ── Leaflet ── */
+document.addEventListener('DOMContentLoaded', function () {
+    const map = L.map('leaflet-map', {
+        center: [48.8566, 2.3522],
+        zoom: 13,
+        zoomControl: false,
+        attributionControl: true
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OSM &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(map);
+
+    const wrapper = document.getElementById('map-wrapper');
+    const ro = new ResizeObserver(() => { map.invalidateSize(); });
+    ro.observe(wrapper);
+
+    document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
+    document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+    document.getElementById('recenter').addEventListener('click', () => map.flyTo([48.8566, 2.3522], 13, { duration: 0.7 }));
+
+    const stations = [
+        {
+            name: 'Downtown Station',
+            lat: 48.8566, lng: 2.3522,
+            aqi: 78, aqiLabel: 'Unhealthy', aqiColor: '#f43f5e',
+            desc: 'Sensitive groups should limit outdoor exertion. Air quality is currently reduced by local traffic.',
+            temp: '22°C', humidity: '45%', wind: '12k/h',
+            pm25: '12', no2: '34', co: '0.5'
+        },
+        {
+            name: 'Parc Station',
+            lat: 48.8650, lng: 2.3350,
+            aqi: 32, aqiLabel: 'Good', aqiColor: '#1ab394',
+            desc: 'Air quality is satisfactory. Enjoy outdoor activities freely.',
+            temp: '21°C', humidity: '52%', wind: '8k/h',
+            pm25: '5', no2: '12', co: '0.2'
+        },
+        {
+            name: 'Industrial Zone',
+            lat: 48.8450, lng: 2.3700,
+            aqi: 120, aqiLabel: 'Very Unhealthy', aqiColor: '#fbbf24',
+            desc: 'Everyone should reduce prolonged outdoor exertion. Industrial emissions detected.',
+            temp: '23°C', humidity: '38%', wind: '15k/h',
+            pm25: '35', no2: '58', co: '1.2'
+        }
+    ];
+
+    function createMarkerIcon(color, isActive) {
+        const s = isActive ? 44 : 34;
+        const inner = isActive ? 16 : 12;
+        return L.divIcon({
+            className: '',
+            iconSize: [s, s],
+            iconAnchor: [s/2, s/2],
+            html: `
+                <div style="width:${s}px;height:${s}px;position:relative;display:flex;align-items:center;justify-content:center;">
+                    ${isActive ? `
+                    <div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:0.18;animation:marker-pulse 2s ease-out infinite;"></div>
+                    <div style="position:absolute;inset:4px;border-radius:50%;background:${color};opacity:0.08;animation:marker-pulse 2s ease-out infinite 0.5s;"></div>
+                    ` : ''}
+                    <div style="
+                        width:${s}px;height:${s}px;border-radius:50%;
+                        background:rgba(1,26,23,0.85);
+                        border:2px solid ${color};
+                        box-shadow:0 0 ${isActive?20:10}px ${color}${isActive?'80':'40'},0 4px 16px rgba(0,0,0,0.4);
+                        display:flex;align-items:center;justify-content:center;
+                        transition:all 0.3s;
+                        ${isActive ? 'transform:scale(1.1);' : ''}
+                    ">
+                        <div style="width:${inner}px;height:${inner}px;border-radius:50%;background:${color};${isActive ? 'box-shadow:0 0 8px '+color : ''}"></div>
+                    </div>
+                </div>
+            `
+        });
+    }
+
+    let activeIdx = null;
+    const markers = [];
+
+    stations.forEach(function (s, i) {
+        const m = L.marker([s.lat, s.lng], { icon: createMarkerIcon(s.aqiColor, false) }).addTo(map);
+        m.bindTooltip(s.name, {
+            direction: 'top', offset: [0, -20],
+            className: 'dark-tooltip'
+        });
+        m.on('click', () => openPanel(i));
+        markers.push(m);
+    });
+
+    const panel = document.getElementById('detail-panel');
+
+    window.openPanel = function (i) {
+        const s = stations[i];
+        if (activeIdx !== null) markers[activeIdx].setIcon(createMarkerIcon(stations[activeIdx].aqiColor, false));
+        activeIdx = i;
+        markers[i].setIcon(createMarkerIcon(s.aqiColor, true));
+        map.flyTo([s.lat, s.lng], 15, { duration: 0.7 });
+
+        document.getElementById('panel-station-name').textContent = s.name;
+        document.getElementById('panel-aqi-value').textContent = s.aqi;
+        document.getElementById('panel-aqi-label').textContent = s.aqiLabel;
+        document.getElementById('panel-aqi-label').style.color = s.aqiColor;
+        document.getElementById('panel-aqi-desc').textContent = s.desc;
+        document.getElementById('panel-aqi-bar').style.width = Math.min(s.aqi, 200) / 200 * 100 + '%';
+        document.getElementById('panel-aqi-bar').style.background = `linear-gradient(90deg,#1ab394,${s.aqiColor})`;
+        document.getElementById('panel-temp').textContent = s.temp;
+        document.getElementById('panel-humidity').textContent = s.humidity;
+        document.getElementById('panel-wind').textContent = s.wind;
+        document.getElementById('panel-pm25').textContent = s.pm25;
+        document.getElementById('panel-no2').textContent = s.no2;
+        document.getElementById('panel-co').textContent = s.co;
+
+        panel.classList.add('open');
+    };
+
+    window.closePanel = function () {
+        panel.classList.remove('open');
+        if (activeIdx !== null) { markers[activeIdx].setIcon(createMarkerIcon(stations[activeIdx].aqiColor, false)); activeIdx = null; }
+    };
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+    const style = document.createElement('style');
+    style.textContent = `
+        .dark-tooltip {
+            background: rgba(1,26,23,0.9) !important;
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(26,179,148,0.25) !important;
+            border-radius: 10px !important;
+            padding: 4px 12px !important;
+            font-family: 'DM Mono', monospace !important;
+            font-weight: 500 !important;
+            font-size: 11px !important;
+            color: #c0f3ea !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+            letter-spacing: 0.05em;
+        }
+        .dark-tooltip::before { display:none !important; }
+        .leaflet-container { background: #011a17 !important; }
+    `;
+    document.head.appendChild(style);
+});
+</script>

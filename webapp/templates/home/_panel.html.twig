@@ -1,0 +1,98 @@
+{# ── Detail Slide-out Panel ── #}
+<aside id="detail-panel" class="slide-panel">
+    <div class="panel-inner">
+        {# Header #}
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+            <div>
+                <div class="panel-eyebrow">Live Monitoring</div>
+                <div class="panel-station-name" id="panel-station-name">Downtown Station</div>
+            </div>
+            <button class="panel-close" onclick="closePanel()">
+                <span class="material-symbols-outlined" style="font-size:18px">close</span>
+            </button>
+        </div>
+
+        {# AQI Gauge #}
+        <div class="aqi-gauge-wrap">
+            <div style="position:relative;z-index:1;">
+                <div class="aqi-value-label" id="panel-aqi-value">78</div>
+                <div class="aqi-status-label" id="panel-aqi-label" style="color:#ba1a1a">Unhealthy</div>
+                <div class="aqi-bar-track">
+                    <div class="aqi-bar-fill" id="panel-aqi-bar" style="width:39%;background:linear-gradient(90deg,#1ab394,#ba1a1a)"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:12px;">
+                    <span style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(192,243,234,0.3)">0</span>
+                    <span style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(192,243,234,0.3)">200</span>
+                </div>
+                <div class="aqi-desc" id="panel-aqi-desc">Sensitive groups should limit outdoor exertion.</div>
+            </div>
+        </div>
+
+        {# Weather #}
+        <div class="section-label">Weather Snapshot</div>
+        <div class="weather-grid" style="margin-bottom:24px;">
+            <div class="weather-card">
+                <div class="weather-icon material-symbols-outlined">thermostat</div>
+                <div class="weather-value" id="panel-temp">22°C</div>
+                <div class="weather-key">Temp</div>
+            </div>
+            <div class="weather-card">
+                <div class="weather-icon material-symbols-outlined">humidity_percentage</div>
+                <div class="weather-value" id="panel-humidity">45%</div>
+                <div class="weather-key">Humidity</div>
+            </div>
+            <div class="weather-card">
+                <div class="weather-icon material-symbols-outlined">air</div>
+                <div class="weather-value" id="panel-wind">12k/h</div>
+                <div class="weather-key">Wind</div>
+            </div>
+        </div>
+
+        {# Pollutants #}
+        <div class="section-label">Pollutants Breakdown</div>
+        <div class="pollutant-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="pollutant-badge" style="background:rgba(244,63,94,0.1);color:#f43f5e">PM</div>
+                <div>
+                    <div class="pollutant-name">PM2.5</div>
+                    <div class="pollutant-type">Fine Particles</div>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <span class="pollutant-val" id="panel-pm25">12</span>
+                <span class="pollutant-unit"> µg/m³</span>
+            </div>
+        </div>
+        <div class="pollutant-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="pollutant-badge" style="background:rgba(251,191,36,0.1);color:#fbbf24">NO</div>
+                <div>
+                    <div class="pollutant-name">NO₂</div>
+                    <div class="pollutant-type">Nitrogen Dioxide</div>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <span class="pollutant-val" id="panel-no2">34</span>
+                <span class="pollutant-unit"> ppb</span>
+            </div>
+        </div>
+        <div class="pollutant-row">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="pollutant-badge" style="background:rgba(26,179,148,0.1);color:#1ab394">CO</div>
+                <div>
+                    <div class="pollutant-name">CO</div>
+                    <div class="pollutant-type">Carbon Monoxide</div>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <span class="pollutant-val" id="panel-co">0.5</span>
+                <span class="pollutant-unit"> ppm</span>
+            </div>
+        </div>
+
+        <a class="btn-history" href="#">
+            <span class="material-symbols-outlined" style="font-size:16px">history</span>
+            View Detailed History
+        </a>
+    </div>
+</aside>
