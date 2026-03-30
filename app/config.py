@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     )
 
     database_url: str = Field(
-        default="postgresql+psycopg2://postgres:postgres@localhost:5432/air_quality",
+        default="sqlite:///data/air_quality.db",
         alias="DATABASE_URL",
     )
     pollution_bucket: str = Field(

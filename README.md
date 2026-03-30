@@ -6,7 +6,7 @@ Ce repo propose un pipeline de données et une API en Python/FastAPI qui :
 - récupère les observations météo SYNOP (Météo France) sur la même période ;
 - effectue une jointure spatio-temporelle station par station via une recherche du voisin météo le plus proche (BallTree en coordonnées Haversine) ;
 - calcule un indice composite (pollution + conditions météo) avec pondération configurable et catégorisation (low/moderate/high/critical) ;
-- stocke le résultat + les prévisions linéaires dans PostgreSQL ;
+- stocke le résultat + les prévisions linéaires dans une base SQLite ;
 - expose les données aux devs via une API FastAPI (`/health`, `/indices`, `/stations/{code}/indices`, `/forecasts`).
 
 ## Structure
@@ -20,7 +20,7 @@ app/
   db.py              # création du moteur SQLAlchemy
   forecasting.py     # régression linéaire simple pour la prévision
   main.py            # API FastAPI
-  models.py          # tables Postgres (stations, indices, prévisions)
+  models.py          # tables SQLite (stations, indices, prévisions)
   processors.py      # nettoyage pandas + jointure géospatiale + scoring
   schemas.py         # schémas Pydantic renvoyés par l'API
 ```
@@ -30,7 +30,6 @@ app/
 ## Pré-requis
 
 - Python 3.11+
-- PostgreSQL 14+
 
 ## Configuration
 
@@ -43,7 +42,7 @@ cp .env.example .env
 
 Variables importantes :
 
-- `DATABASE_URL` : connexion SQLAlchemy (ex. `postgresql+psycopg2://user:pwd@localhost:5432/air_quality`).
+- `DATABASE_URL` : connexion SQLAlchemy (par défaut `sqlite:///data/air_quality.db`).
 - `POLLUTION_BUCKET` / `POLLUTION_PREFIX` : bucket S3 data.gouv à lister.
 - `POLLUTION_METADATA_URL` : XLS "Dataset D" pour récupérer les coordonnées des stations.
 - `WEATHER_RESOURCE_URL` : archive `synop_YYYY.csv.gz` (choisir l'année qui couvre la fenêtre visée, ex. `synop_2026.csv.gz` pour des données temps réel).
@@ -60,11 +59,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Initialiser la base :
-
-```bash
-createdb air_quality  # ou utilisez psql pour créer la base si besoin
-```
+La base SQLite (`data/air_quality.db`) est créée automatiquement lors de la première exécution.
 
 Lancer un run d'ingestion (fenêtre passée) :
 
@@ -106,7 +101,7 @@ uvicorn app.main:app --reload
 4. L'indice final est borné à `[0, 100]` et catégorisé : `low`, `moderate`, `high`, `critical`.
 5. Bonus : pour chaque station on entraîne une régression linéaire simple `indice = a * temps + b` pour projeter `N` heures dans le futur.
 
-Tous les paramètres (poids, seuils, rayon géographique, horizon de prévision) peuvent être ajustés dans `constants.py` ou via l'environnement.
+Tous les paramètres (poids, seuils, rayon géographique, horizon de prévision) peuvent être ajustés dans `constants.py` ou via l'environnement. Le fichier SQLite peut être inspecté avec `sqlite3 data/air_quality.db ".tables"` une fois la pipeline exécutée.
 
 ## Tests rapides sans réseau
 
