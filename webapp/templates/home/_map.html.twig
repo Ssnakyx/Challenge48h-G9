@@ -1,0 +1,42 @@
+{# ── Map Section ── #}
+<section id="map-section" style="position:relative;z-index:2;padding:60px 24px 80px;">
+    <div class="map-section-header" style="max-width:900px;margin:0 auto 40px;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+        <div>
+            <div class="section-eyebrow">Surveillance Interactive</div>
+            <div class="section-title">Carte des Stations</div>
+        </div>
+        <div class="filter-pill-group">
+            <button class="filter-pill active">Toutes les données</button>
+            <button class="filter-pill">AQI</button>
+            <button class="filter-pill">Météo</button>
+            <button class="filter-pill">Alertes</button>
+        </div>
+    </div>
+
+    {# Resizable map wrapper #}
+    <div class="map-wrapper" id="map-wrapper">
+        {# Map topbar #}
+        <div class="map-topbar">
+            <div class="map-status-badge">
+                <div class="live-dot"></div>
+                Flux en direct · 3 stations
+            </div>
+            <div class="map-controls">
+                <div class="map-ctrl-btn" id="zoom-in" title="Zoomer">+</div>
+                <div class="map-ctrl-btn" id="zoom-out" title="Dézoomer">−</div>
+                <div class="map-ctrl-btn" id="recenter" title="Recentrer">
+                    <span class="material-symbols-outlined" style="font-size:16px">my_location</span>
+                </div>
+            </div>
+        </div>
+
+        {# Leaflet map #}
+        <div id="leaflet-map"></div>
+
+        {# Resize hint #}
+        <div class="resize-hint">
+            <div class="grip-icon"><span></span><span></span></div>
+            Glisser pour redimensionner
+        </div>
+    </div>
+</section>

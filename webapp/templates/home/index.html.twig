@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}AirMetrics | Environmental Narrative{% endblock %}
+
+{% block stylesheets %}
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@400;500;700;800;900&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+{% include 'home/_styles.html.twig' %}
+{% endblock %}
+
+{% block body %}
+
+{# Ambient Background #}
+<div id="ambient-bg">
+    <div class="mesh-blob"></div>
+    <div class="mesh-blob"></div>
+    <div class="mesh-blob"></div>
+</div>
+
+{# Aurora Waves #}
+<div class="aurora-container">
+    <div class="aurora-wave"></div>
+    <div class="aurora-wave"></div>
+    <div class="aurora-wave"></div>
+</div>
+
+{# Floating Geometric Shapes #}
+<div class="geo-shapes">
+    <div class="geo-shape hex"></div>
+    <div class="geo-shape ring"></div>
+    <div class="geo-shape diamond"></div>
+    <div class="geo-shape cross"></div>
+    <div class="geo-shape hex"></div>
+    <div class="geo-shape ring"></div>
+    <div class="geo-shape diamond"></div>
+    <div class="geo-shape cross"></div>
+    <div class="geo-shape hex"></div>
+    <div class="geo-shape ring"></div>
+</div>
+
+{# Glowing Orbs #}
+<div class="glow-orbs">
+    <div class="glow-orb"></div>
+    <div class="glow-orb"></div>
+    <div class="glow-orb"></div>
+</div>
+
+{# Scanning Grid #}
+<div class="scan-grid">
+    <div class="scan-line-h"></div>
+    <div class="scan-line-v"></div>
+</div>
+
+<canvas id="particle-canvas"></canvas>
+
+{% include 'home/_header.html.twig' %}
+
+<main>
+    {% include 'home/_hero.html.twig' %}
+    {% include 'home/_map.html.twig' %}
+</main>
+
+{% include 'home/_panel.html.twig' %}
+{% include 'home/_bottom_nav.html.twig' %}
+{% include 'home/_scripts.html.twig' %}
+
+{% endblock %}
