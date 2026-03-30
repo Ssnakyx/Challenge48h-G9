@@ -38,7 +38,7 @@
         position: absolute;
         border-radius: 50%;
         filter: blur(100px);
-        opacity: 0.18;
+        opacity: 0.3;
         animation: blobDrift 18s ease-in-out infinite;
     }
     .mesh-blob:nth-child(1) { width: 700px; height: 700px; background: radial-gradient(circle, #1ab394, #052e28); top: -200px; left: -200px; animation-delay: 0s; }
@@ -51,13 +51,191 @@
         66% { transform: translate(-20px, 50px) scale(0.95); }
     }
 
+    /* ── Aurora waves ── */
+    .aurora-container {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+        opacity: 0.22;
+    }
+    .aurora-wave {
+        position: absolute;
+        width: 200%;
+        height: 300px;
+        left: -50%;
+        background: linear-gradient(180deg, transparent 0%, rgba(26,179,148,0.3) 40%, rgba(13,107,90,0.15) 70%, transparent 100%);
+        border-radius: 50%;
+        filter: blur(40px);
+        animation: auroraShift 12s ease-in-out infinite;
+    }
+    .aurora-wave:nth-child(1) { top: -80px; animation-duration: 12s; animation-delay: 0s; }
+    .aurora-wave:nth-child(2) { top: -40px; animation-duration: 16s; animation-delay: -4s; opacity: 0.8; }
+    .aurora-wave:nth-child(3) { top: 0px; animation-duration: 20s; animation-delay: -8s; opacity: 0.5; }
+
+    @keyframes auroraShift {
+        0%, 100% { transform: translateX(0) scaleY(1) rotate(0deg); }
+        25% { transform: translateX(5%) scaleY(1.2) rotate(1deg); }
+        50% { transform: translateX(-3%) scaleY(0.8) rotate(-1deg); }
+        75% { transform: translateX(4%) scaleY(1.1) rotate(0.5deg); }
+    }
+
+    /* ── Floating geometric shapes ── */
+    .geo-shapes {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .geo-shape {
+        position: absolute;
+        border: 1px solid rgba(26,179,148,0.12);
+        opacity: 0;
+        animation: geoFloat 20s linear infinite;
+    }
+    .geo-shape.hex {
+        width: 60px; height: 60px;
+        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        background: rgba(26,179,148,0.06);
+        border: none;
+    }
+    .geo-shape.ring {
+        width: 80px; height: 80px;
+        border-radius: 50%;
+        border: 1px solid rgba(26,179,148,0.1);
+    }
+    .geo-shape.diamond {
+        width: 40px; height: 40px;
+        background: rgba(26,179,148,0.06);
+        border: none;
+        clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    }
+    .geo-shape.cross {
+        width: 30px; height: 30px;
+        background: none;
+        border: none;
+    }
+    .geo-shape.cross::before, .geo-shape.cross::after {
+        content: '';
+        position: absolute;
+        background: rgba(26,179,148,0.09);
+    }
+    .geo-shape.cross::before { width: 100%; height: 1px; top: 50%; left: 0; }
+    .geo-shape.cross::after { width: 1px; height: 100%; left: 50%; top: 0; }
+
+    .geo-shape:nth-child(1)  { left: 5%;  animation-duration: 22s; animation-delay: 0s; }
+    .geo-shape:nth-child(2)  { left: 15%; animation-duration: 26s; animation-delay: -3s; }
+    .geo-shape:nth-child(3)  { left: 25%; animation-duration: 20s; animation-delay: -7s; }
+    .geo-shape:nth-child(4)  { left: 38%; animation-duration: 28s; animation-delay: -2s; }
+    .geo-shape:nth-child(5)  { left: 52%; animation-duration: 24s; animation-delay: -10s; }
+    .geo-shape:nth-child(6)  { left: 65%; animation-duration: 21s; animation-delay: -5s; }
+    .geo-shape:nth-child(7)  { left: 78%; animation-duration: 25s; animation-delay: -8s; }
+    .geo-shape:nth-child(8)  { left: 88%; animation-duration: 23s; animation-delay: -1s; }
+    .geo-shape:nth-child(9)  { left: 45%; animation-duration: 27s; animation-delay: -13s; }
+    .geo-shape:nth-child(10) { left: 70%; animation-duration: 19s; animation-delay: -6s; }
+
+    @keyframes geoFloat {
+        0% {
+            transform: translateY(110vh) rotate(0deg) scale(0.5);
+            opacity: 0;
+        }
+        10% { opacity: 0.85; }
+        90% { opacity: 0.85; }
+        100% {
+            transform: translateY(-10vh) rotate(360deg) scale(1.2);
+            opacity: 0;
+        }
+    }
+
+    /* ── Glowing orbs ── */
+    .glow-orbs {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    .glow-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        animation: orbPulse 8s ease-in-out infinite, orbWander 25s ease-in-out infinite;
+    }
+    .glow-orb:nth-child(1) {
+        width: 200px; height: 200px;
+        background: rgba(26,179,148,0.15);
+        top: 20%; right: 15%;
+        animation-delay: 0s;
+    }
+    .glow-orb:nth-child(2) {
+        width: 150px; height: 150px;
+        background: rgba(125,226,207,0.12);
+        bottom: 30%; left: 10%;
+        animation-delay: -3s;
+    }
+    .glow-orb:nth-child(3) {
+        width: 120px; height: 120px;
+        background: rgba(13,107,90,0.18);
+        top: 60%; right: 40%;
+        animation-delay: -6s;
+    }
+
+    @keyframes orbPulse {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.3); }
+    }
+    @keyframes orbWander {
+        0%, 100% { translate: 0 0; }
+        25% { translate: 40px -60px; }
+        50% { translate: -30px 40px; }
+        75% { translate: 50px 20px; }
+    }
+
+    /* ── Scanning grid lines ── */
+    .scan-grid {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+        opacity: 0.06;
+    }
+    .scan-line-h {
+        position: absolute;
+        width: 100%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent 0%, var(--teal-400) 50%, transparent 100%);
+        animation: scanH 8s linear infinite;
+    }
+    .scan-line-v {
+        position: absolute;
+        height: 100%;
+        width: 1px;
+        background: linear-gradient(180deg, transparent 0%, var(--teal-400) 50%, transparent 100%);
+        animation: scanV 10s linear infinite;
+    }
+    @keyframes scanH {
+        0% { top: -2px; opacity: 0; }
+        5% { opacity: 1; }
+        95% { opacity: 1; }
+        100% { top: 100%; opacity: 0; }
+    }
+    @keyframes scanV {
+        0% { left: -2px; opacity: 0; }
+        5% { opacity: 1; }
+        95% { opacity: 1; }
+        100% { left: 100%; opacity: 0; }
+    }
+
     /* ── Particle canvas ── */
     #particle-canvas {
         position: fixed;
         inset: 0;
         z-index: 0;
         pointer-events: none;
-        opacity: 0.5;
+        opacity: 0.65;
     }
 
     /* ── Noise grain overlay ── */
