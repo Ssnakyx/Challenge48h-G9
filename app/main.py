@@ -7,12 +7,18 @@ from __future__ import annotations
 from typing import List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from .config import get_settings
 from .db import get_session
 from .models import ImpactForecast, ImpactIndex, Station
-from .schemas import ForecastOut, HealthResponse, ImpactIndexOut, WeatherSnapshot
+from .schemas import (
+    ForecastOut,
+    HealthResponse,
+    ImpactIndexOut,
+    PollutantOut,
+    WeatherSnapshot,
+)
 
 settings = get_settings()
 app = FastAPI(
@@ -44,7 +50,17 @@ def _to_index_schema(row: ImpactIndex) -> ImpactIndexOut:
         dominant_pollutant=row.dominant_pollutant,
         dominant_value=row.dominant_value,
         pollutant_unit=row.pollutant_unit,
-        pollutant_payload=row.pollutant_payload,
+        pollutants=[
+            PollutantOut(
+                pollutant=p.pollutant,
+                value=p.value,
+                unit=p.unit,
+                weight=p.weight,
+                threshold=p.threshold,
+                score=p.score,
+            )
+            for p in row.pollutants
+        ],
         station=row.station,
         weather=_to_weather_snapshot(row),
     )
@@ -66,7 +82,10 @@ def list_indices(
 ) -> List[ImpactIndexOut]:
     query = (
         session.query(ImpactIndex)
-        .join(ImpactIndex.station)
+        .options(
+            selectinload(ImpactIndex.station),
+            selectinload(ImpactIndex.pollutants),
+        )
         .order_by(ImpactIndex.timestamp.desc())
     )
     if station_code:
@@ -88,6 +107,10 @@ def station_history(
         raise HTTPException(status_code=404, detail="Station inconnue")
     rows = (
         session.query(ImpactIndex)
+        .options(
+            selectinload(ImpactIndex.station),
+            selectinload(ImpactIndex.pollutants),
+        )
         .filter(ImpactIndex.station_id == station.id)
         .order_by(ImpactIndex.timestamp.desc())
         .limit(limit)

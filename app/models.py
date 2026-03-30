@@ -68,7 +68,6 @@ class ImpactIndex(Base):
     dominant_pollutant: Mapped[Optional[str]] = mapped_column(String(32))
     dominant_value: Mapped[Optional[float]] = mapped_column(Float)
     pollutant_unit: Mapped[Optional[str]] = mapped_column(String(32))
-    pollutant_payload: Mapped[Optional[dict]] = mapped_column(JSON)
     weather_station_code: Mapped[Optional[str]] = mapped_column(String(32))
     weather_station_name: Mapped[Optional[str]] = mapped_column(String(255))
     weather_latitude: Mapped[Optional[float]] = mapped_column(Float)
@@ -80,6 +79,9 @@ class ImpactIndex(Base):
     )
 
     station: Mapped[Station] = relationship(back_populates="indices")
+    pollutants: Mapped[List["ImpactPollutant"]] = relationship(
+        back_populates="impact_index", cascade="all, delete-orphan"
+    )
 
 
 class ImpactForecast(Base):
@@ -104,3 +106,23 @@ class ImpactForecast(Base):
     )
 
     station: Mapped[Station] = relationship(back_populates="forecasts")
+
+
+class ImpactPollutant(Base):
+    __tablename__ = "impact_pollutants"
+    __table_args__ = (
+        Index("ix_pollutants_pollutant", "pollutant"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    impact_index_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("impact_indices.id", ondelete="CASCADE"), index=True
+    )
+    pollutant: Mapped[str] = mapped_column(String(64), nullable=False)
+    value: Mapped[Optional[float]] = mapped_column(Float)
+    unit: Mapped[Optional[str]] = mapped_column(String(32))
+    weight: Mapped[Optional[float]] = mapped_column(Float)
+    threshold: Mapped[Optional[float]] = mapped_column(Float)
+    score: Mapped[Optional[float]] = mapped_column(Float)
+
+    impact_index: Mapped[ImpactIndex] = relationship(back_populates="pollutants")

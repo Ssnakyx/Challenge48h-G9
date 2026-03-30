@@ -5,7 +5,7 @@ Pydantic schemas exposed by the FastAPI layer.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -31,6 +31,15 @@ class WeatherSnapshot(BaseModel):
     details: Optional[dict]
 
 
+class PollutantOut(BaseModel):
+    pollutant: str
+    value: Optional[float]
+    unit: Optional[str]
+    weight: Optional[float]
+    threshold: Optional[float]
+    score: Optional[float]
+
+
 class ImpactIndexOut(BaseModel):
     id: int
     timestamp: datetime
@@ -41,7 +50,7 @@ class ImpactIndexOut(BaseModel):
     dominant_pollutant: Optional[str]
     dominant_value: Optional[float]
     pollutant_unit: Optional[str]
-    pollutant_payload: Optional[list[dict]]
+    pollutants: List[PollutantOut]
     station: StationOut
     weather: WeatherSnapshot
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 import argparse
 import logging
 from datetime import datetime, timezone
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional
 
 import pandas as pd
 
@@ -15,7 +15,7 @@ from .config import get_settings
 from .data_clients import DataGouvClient
 from .db import SessionLocal, engine
 from .forecasting import build_forecasts
-from .models import Base, ImpactForecast, ImpactIndex, Station
+from .models import Base, ImpactForecast, ImpactIndex, ImpactPollutant, Station
 from .processors import (
     aggregate_pollution,
     attach_station_metadata,
@@ -114,6 +114,7 @@ def _persist_indices(session, df: pd.DataFrame) -> Dict[str, Station]:
             )
             .one_or_none()
         )
+        pollutant_details = row.get("pollutant_payload") or []
         payload = ImpactIndex(
             station_id=station.id,
             timestamp=timestamp,
@@ -124,7 +125,6 @@ def _persist_indices(session, df: pd.DataFrame) -> Dict[str, Station]:
             dominant_pollutant=row.get("dominant_pollutant"),
             dominant_value=_safe_float(row.get("dominant_value")),
             pollutant_unit=row.get("pollutant_unit"),
-            pollutant_payload=row.get("pollutant_payload"),
             weather_station_code=row.get("weather_station_code"),
             weather_station_name=row.get("weather_station_name"),
             weather_latitude=_safe_float(row.get("weather_latitude")),
@@ -148,7 +148,6 @@ def _persist_indices(session, df: pd.DataFrame) -> Dict[str, Station]:
                 "dominant_pollutant",
                 "dominant_value",
                 "pollutant_unit",
-                "pollutant_payload",
                 "weather_station_code",
                 "weather_station_name",
                 "weather_latitude",
@@ -157,9 +156,13 @@ def _persist_indices(session, df: pd.DataFrame) -> Dict[str, Station]:
                 "weather_payload",
             ]:
                 setattr(existing, field, getattr(payload, field))
+            target = existing
         else:
             session.add(payload)
+            session.flush()
+            target = payload
             inserted += 1
+        _upsert_pollutants(session, target, pollutant_details)
     session.commit()
     logger.info("Persisted %s new impact indices", inserted)
     return cache
@@ -198,6 +201,25 @@ def _persist_forecasts(session, df: pd.DataFrame, cache: Dict[str, Station]) -> 
             inserted += 1
     session.commit()
     logger.info("Persisted %s forecasts", inserted)
+
+
+def _upsert_pollutants(
+    session, impact_index: ImpactIndex, payload: Optional[list]
+) -> None:
+    session.query(ImpactPollutant).filter(
+        ImpactPollutant.impact_index_id == impact_index.id
+    ).delete()
+    for entry in payload or []:
+        pollutant = ImpactPollutant(
+            impact_index_id=impact_index.id,
+            pollutant=entry.get("pollutant"),
+            value=_safe_float(entry.get("value")),
+            unit=entry.get("unit"),
+            weight=_safe_float(entry.get("weight")),
+            threshold=_safe_float(entry.get("threshold")),
+            score=_safe_float(entry.get("score")),
+        )
+        session.add(pollutant)
 
 
 def run_pipeline(
