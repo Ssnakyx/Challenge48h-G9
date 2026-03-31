@@ -16,6 +16,13 @@ class GeoPointRepository extends ServiceEntityRepository
         parent::__construct($registry, GeoPoint::class);
     }
 
+    public function findAllGeoPoints(): array
+    {
+        return $this->createQueryBuilder('g')
+            ->getQuery()
+            ->getResult();
+    }
+
     //    /**
     //     * @return GeoPoint[] Returns an array of GeoPoint objects
     //     */
