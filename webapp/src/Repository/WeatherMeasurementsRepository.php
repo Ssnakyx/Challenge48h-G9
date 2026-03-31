@@ -16,17 +16,4 @@ class WeatherMeasurementsRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, WeatherMeasurements::class);
     }
-
-    public function findByDateForGeoPoint(GeoPoint $geoPoint, \DateTime $date = new \DateTime()): array
-    {
-        return $this
-            ->createQueryBuilder('wm')
-            ->andWhere('wm.date > :date')
-            ->andWhere('wm.geoPoint = :geoPoint')
-            ->setParameter('date', $date)
-            ->setParameter('geoPoint', $geoPoint)
-            ->getQuery()
-            ->getResult()
-            ;
-    }
 }

@@ -16,17 +16,4 @@ class PollutionMeasurementsRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, PollutionMeasurements::class);
     }
-
-    public function findByDateForGeoPoint(GeoPoint $geoPoint, \DateTime $date = new \DateTime()): array
-    {
-        return $this
-            ->createQueryBuilder('pm')
-            ->andWhere('pm.date > :date')
-            ->andWhere('pm.geoPoint = :geoPoint')
-            ->setParameter('date', $date)
-            ->setParameter('geoPoint', $geoPoint)
-            ->getQuery()
-            ->getResult()
-        ;
-    }
 }

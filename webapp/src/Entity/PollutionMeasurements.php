@@ -56,7 +56,7 @@ class PollutionMeasurements
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTime $date = null;
 
-    #[ORM\Column(type: Types::DATE_MUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTime $createdAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'pollutionMeasurement')]
