@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import List, Optional
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Date, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -37,8 +37,8 @@ class GeoPoint(Base):
     longitude: Mapped[Optional[float]] = mapped_column(Float)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+    created_at: Mapped[date] = mapped_column(
+        Date(timezone=True), server_default=func.now(), nullable=False
     )
 
     weather_measurements: Mapped[List["WeatherMeasurement"]] = relationship(
@@ -68,8 +68,8 @@ class WeatherMeasurement(Base):
     pressure: Mapped[Optional[float]] = mapped_column(Float)
     score: Mapped[Optional[float]] = mapped_column(Float)
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+    created_at: Mapped[date] = mapped_column(
+        Date(timezone=True), server_default=func.now(), nullable=False
     )
 
     geo_point: Mapped[GeoPoint] = relationship(back_populates="weather_measurements")
@@ -101,8 +101,8 @@ class PollutionMeasurement(Base):
     co_score: Mapped[Optional[float]] = mapped_column(Float)
     score: Mapped[Optional[float]] = mapped_column(Float)
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+    created_at: Mapped[date] = mapped_column(
+        Date(timezone=True), server_default=func.now(), nullable=False
     )
 
     geo_point: Mapped[GeoPoint] = relationship(back_populates="pollution_measurements")
