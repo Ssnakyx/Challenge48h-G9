@@ -16,28 +16,14 @@ class PollutionMeasurementsRepository extends ServiceEntityRepository
         parent::__construct($registry, PollutionMeasurements::class);
     }
 
-    //    /**
-    //     * @return PollutionMeasurements[] Returns an array of PollutionMeasurements objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?PollutionMeasurements
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    public function findByDate(\DateTime $date = new \DateTime()): array
+    {
+        return $this
+            ->createQueryBuilder('pm')
+            ->where('pm.date > :date')
+            ->setParameter('date', $date)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }
