@@ -81,7 +81,7 @@ class AppFixtures extends Fixture
                     'windSpeed'            => 15.0,
                     'windDirection'        => 10,
                     'pressure' => 1010.0,
-                    'score' => 60.0,
+                    'score' => 6.0,
                     'date' => $yesterday,
                 ],
             ],

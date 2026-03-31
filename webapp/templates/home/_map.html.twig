@@ -6,10 +6,7 @@
             <div class="section-title">Carte des Stations</div>
         </div>
         <div class="filter-pill-group">
-            <button class="filter-pill active">Toutes les données</button>
-            <button class="filter-pill">AQI</button>
-            <button class="filter-pill">Météo</button>
-            <button class="filter-pill">Alertes</button>
+            {{ form(form) }}
         </div>
     </div>
 
@@ -19,7 +16,7 @@
         <div class="map-topbar">
             <div class="map-status-badge">
                 <div class="live-dot"></div>
-                Flux en direct · 3 stations
+                Flux en direct · {{ stationsCount }} stations
             </div>
             <div class="map-controls">
                 <div class="map-ctrl-btn" id="zoom-in" title="Zoomer">+</div>
