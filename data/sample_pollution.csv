@@ -1,0 +1,7 @@
+﻿Date de debut;Date de fin;Organisme;code zas;Zas;code site;nom site;type d'implantation;Polluant;type d'influence;discriminant;Reglementaire;type d'evaluation;procedure de mesure;type de valeur;valeur;valeur brute;unite de mesure;taux de saisie;couverture temporelle;couverture de donnees;code qualite;validite
+2024/01/01 00:00:00;2024/01/01 01:00:00;ATMO GRAND EST;FR44ZAG02;ZAG METZ;FR01005;Hayange;Periurbaine;PM10;Urbaine;A;Oui;mesures automatiques;MP101;moyenne horaire validee;18.9;18.9;ug-m3;;;;A;1
+2024/01/01 00:00:00;2024/01/01 01:00:00;ATMO GRAND EST;FR44ZAG02;ZAG METZ;FR01005;Hayange;Periurbaine;NO2;Urbaine;A;Oui;mesures automatiques;AC32E;moyenne horaire validee;42.5;42.5;ug-m3;;;;A;1
+2024/01/01 01:00:00;2024/01/01 02:00:00;ATMO GRAND EST;FR44ZAG02;ZAG METZ;FR01005;Hayange;Periurbaine;PM10;Urbaine;A;Oui;mesures automatiques;MP101;moyenne horaire validee;12.1;12.1;ug-m3;;;;A;1
+2024/01/01 01:00:00;2024/01/01 02:00:00;ATMO GRAND EST;FR44ZAG02;ZAG METZ;FR01005;Hayange;Periurbaine;NO2;Urbaine;A;Oui;mesures automatiques;AC32E;moyenne horaire validee;30.4;30.4;ug-m3;;;;A;1
+2024/01/01 00:00:00;2024/01/01 01:00:00;ATMO AUVERGNE;FR77ZCL01;ZCL LYON;FR02010;Villeurbanne;Urbaine;PM2.5;Urbaine;A;Oui;mesures automatiques;MP101;moyenne horaire validee;22.0;22.0;ug-m3;;;;A;1
+2024/01/01 00:00:00;2024/01/01 01:00:00;ATMO AUVERGNE;FR77ZCL01;ZCL LYON;FR02010;Villeurbanne;Urbaine;O3;Urbaine;A;Oui;mesures automatiques;O341;moyenne horaire validee;110.0;110.0;ug-m3;;;;A;1
