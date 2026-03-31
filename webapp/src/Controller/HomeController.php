@@ -2,6 +2,8 @@
 
 namespace App\Controller;
 
+use App\Entity\GeoPoint;
+use App\Repository\GeoPointRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -13,39 +15,15 @@ use Symfony\UX\Map\Point;
 
 class HomeController extends AbstractController
 {
+    public function __construct(private readonly GeoPointRepository $geoPointRepository)
+    {
+    }
+
     #[Route('/', name: 'app_home')]
     public function index(): Response
     {
-        // TODO: replace with real DB data
-        $stations = [
-            [
-                'lat' => 45.7534031, 'lng' => 4.8295061,
-                'name' => 'Station Centre-Ville',
-                'aqiColor' => '#f43f5e',
-                'aqi' => 78, 'aqiLabel' => 'Malsain',
-                'desc' => "Les groupes sensibles devraient limiter les efforts en extérieur. Qualité de l'air réduite par le trafic local.",
-                'temp' => '22°C', 'humidity' => '45%', 'wind' => '12k/h',
-                'pm25' => '12', 'no2' => '34', 'co' => '0.5',
-            ],
-            [
-                'lat' => 48.8650, 'lng' => 2.3350,
-                'name' => 'Station Parc',
-                'aqiColor' => '#1ab394',
-                'aqi' => 32, 'aqiLabel' => 'Bon',
-                'desc' => "Qualité de l'air satisfaisante. Profitez librement des activités en extérieur.",
-                'temp' => '21°C', 'humidity' => '52%', 'wind' => '8k/h',
-                'pm25' => '5', 'no2' => '12', 'co' => '0.2',
-            ],
-            [
-                'lat' => 48.8450, 'lng' => 2.3700,
-                'name' => 'Zone Industrielle',
-                'aqiColor' => '#fbbf24',
-                'aqi' => 120, 'aqiLabel' => 'Très Malsain',
-                'desc' => "Tout le monde devrait réduire les efforts prolongés en extérieur. Émissions industrielles détectées.",
-                'temp' => '23°C', 'humidity' => '38%', 'wind' => '15k/h',
-                'pm25' => '35', 'no2' => '58', 'co' => '1.2',
-            ],
-        ];
+        /** @var GeoPoint[] $geoPoints */
+        $geoPoints = $this->geoPointRepository->findAllGeoPoints();
 
         $map = new Map('default')
             ->center(new Point(48.8566, 2.3522))
@@ -59,11 +37,10 @@ class HomeController extends AbstractController
             )
         ;
 
-        foreach ($stations as $s) {
+        foreach ($geoPoints as $geoPoint) {
             $map->addMarker(new Marker(
-                position: new Point($s['lat'], $s['lng']),
-                title: $s['name'],
-                extra: array_diff_key($s, array_flip(['lat', 'lng', 'name'])),
+                position: new Point($geoPoint->getLatitude(), $geoPoint->getLongitude()),
+                title: $geoPoint->getStationName(),
             ));
         }
 
