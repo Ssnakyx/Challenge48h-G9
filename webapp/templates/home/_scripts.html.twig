@@ -105,7 +105,7 @@ document.querySelectorAll('.filter-pill').forEach(pill => {
 /* ── UX Map integration ── */
 (function () {
     const CENTER = [48.8566, 2.3522];
-    const ZOOM = 13;
+    const ZOOM = 10;
 
     let leafletMap = null;
     let activeEntry = null; // { marker, extra }
@@ -152,7 +152,7 @@ document.querySelectorAll('.filter-pill').forEach(pill => {
         document.getElementById('panel-aqi-label').textContent = extra.aqiLabel;
         document.getElementById('panel-aqi-label').style.color = extra.aqiColor;
         document.getElementById('panel-aqi-desc').textContent = extra.desc;
-        document.getElementById('panel-aqi-bar').style.width = Math.min(extra.aqi, 200) / 200 * 100 + '%';
+        document.getElementById('panel-aqi-bar').style.width = Math.min(extra.aqi, 100) + '%';
         document.getElementById('panel-aqi-bar').style.background = `linear-gradient(90deg,#1ab394,${extra.aqiColor})`;
         document.getElementById('panel-temp').textContent = extra.temp;
         document.getElementById('panel-humidity').textContent = extra.humidity;
