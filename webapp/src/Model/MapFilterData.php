@@ -4,32 +4,19 @@ namespace App\Model;
 
 class MapFilterData
 {
-    public ?\DateTime $dateMin = null;
-    public ?\DateTime $dateMax = null;
+    public ?\DateTime $date = null;
     public ?float $indexMin = null;
     public ?float $indexMax = null;
     public ?string $searchArea = null;
 
-    public function getDateMin(): ?\DateTime
+    public function getDate(): ?\DateTime
     {
-        return $this->dateMin;
+        return $this->date;
     }
 
-    public function setDateMin(?\DateTime $dateMin): self
+    public function setDate(?\DateTime $date): self
     {
-        $this->dateMin = $dateMin;
-
-        return $this;
-    }
-
-    public function getDateMax(): ?\DateTime
-    {
-        return $this->dateMax;
-    }
-
-    public function setDateMax(?\DateTime $dateMax): self
-    {
-        $this->dateMax = $dateMax;
+        $this->date = $date;
 
         return $this;
     }
