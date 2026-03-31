@@ -9,6 +9,7 @@ RUN apt-get update \
         libicu-dev \
         libxml2-dev \
         zlib1g-dev \
+        libonig-dev \
         pkg-config \
     && docker-php-ext-configure intl \
     && docker-php-ext-install -j"$(nproc)" \

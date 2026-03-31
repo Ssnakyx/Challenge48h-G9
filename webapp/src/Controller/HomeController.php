@@ -22,13 +22,31 @@ use Symfony\UX\Map\Point;
 
 class HomeController extends AbstractController
 {
-    private const COLORS = [ // pour extra.aqiColor
-        "#FF0000", // red
-        "#FF6600",
-        "#FFCC00", // yellow
-        "#CCFF00",
+    private const COLORS = [ // pour extra.aqiColor (0=best → 5=worst)
+        "#00FF00", // green  – excellent
         "#66FF00",
-        "#00FF00" // green
+        "#CCFF00",
+        "#FFCC00", // yellow
+        "#FF6600",
+        "#FF0000", // red    – dangerous
+    ];
+
+    private const AQI_LABELS = [
+        'Excellent',
+        'Bon',
+        'Modéré',
+        'Médiocre',
+        'Mauvais',
+        'Dangereux',
+    ];
+
+    private const AQI_DESCS = [
+        'Qualité de l\'air idéale pour toutes les activités.',
+        'Qualité de l\'air acceptable.',
+        'Les personnes sensibles devraient limiter les efforts prolongés.',
+        'Tout le monde peut ressentir des effets sur la santé.',
+        'Effets graves sur la santé pour tous.',
+        'Alerte sanitaire : danger pour l\'ensemble de la population.',
     ];
 
     public function __construct(
@@ -79,7 +97,8 @@ class HomeController extends AbstractController
             $weatherMeasure = $geoPoint->getWeatherMeasurements()[0];
 
             $newScore = min(round((($pollScore * 10) + $weatherScore) * 10 / 2), 100);
-            $colour = self::COLORS[$newScore / 100 * 6];
+            $bucket = min((int) floor($newScore / 100 * 5), 5);
+            $colour = self::COLORS[$bucket];
 
             $map->addMarker(new Marker(
                 position: new Point($geoPoint->getLatitude(), $geoPoint->getLongitude()),
@@ -87,12 +106,14 @@ class HomeController extends AbstractController
                 extra: [
                     'aqi' => $newScore,
                     'aqiColor' => $colour,
+                    'aqiLabel' => self::AQI_LABELS[$bucket],
+                    'desc' => self::AQI_DESCS[$bucket],
                     'temp' => $weatherMeasure->getTemperatureReal(),
-                    'humidity' =>$weatherMeasure->getHumidity(),
+                    'humidity' => $weatherMeasure->getHumidity(),
                     'wind' => $weatherMeasure->getWindSpeed(),
                     'pm25' => $pollMeasure->getPm25Value(),
                     'no2' => $pollMeasure->getNo2Value(),
-                    'co'=> $pollMeasure->getCoValue()
+                    'co' => $pollMeasure->getCoValue(),
                 ],
             ));
         }

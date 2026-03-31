@@ -3,8 +3,9 @@ set -e
 
 cd /var/www/webapp
 
-composer install --no-dev --optimize-autoloader --no-interaction
+composer install --optimize-autoloader --no-interaction
 php bin/console importmap:install --no-interaction
+php bin/console asset-map:compile --no-interaction
 php bin/console assets:install --no-interaction
 php bin/console cache:clear --no-interaction
 php bin/console cache:warmup --no-interaction
