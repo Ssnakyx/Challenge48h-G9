@@ -102,55 +102,14 @@ document.querySelectorAll('.filter-pill').forEach(pill => {
     });
 });
 
-/* ── Leaflet ── */
-document.addEventListener('DOMContentLoaded', function () {
-    const map = L.map('leaflet-map', {
-        center: [48.8566, 2.3522],
-        zoom: 13,
-        zoomControl: false,
-        attributionControl: true
-    });
+/* ── UX Map integration ── */
+(function () {
+    const CENTER = [48.8566, 2.3522];
+    const ZOOM = 13;
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OSM &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-    }).addTo(map);
-
-    const wrapper = document.getElementById('map-wrapper');
-    const ro = new ResizeObserver(() => { map.invalidateSize(); });
-    ro.observe(wrapper);
-
-    document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
-    document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
-    document.getElementById('recenter').addEventListener('click', () => map.flyTo([48.8566, 2.3522], 13, { duration: 0.7 }));
-
-    const stations = [
-        {
-            name: 'Station Centre-Ville',
-            lat: 48.8566, lng: 2.3522,
-            aqi: 78, aqiLabel: 'Malsain', aqiColor: '#f43f5e',
-            desc: 'Les groupes sensibles devraient limiter les efforts en extérieur. Qualité de l\'air réduite par le trafic local.',
-            temp: '22°C', humidity: '45%', wind: '12k/h',
-            pm25: '12', no2: '34', co: '0.5'
-        },
-        {
-            name: 'Station Parc',
-            lat: 48.8650, lng: 2.3350,
-            aqi: 32, aqiLabel: 'Bon', aqiColor: '#1ab394',
-            desc: 'Qualité de l\'air satisfaisante. Profitez librement des activités en extérieur.',
-            temp: '21°C', humidity: '52%', wind: '8k/h',
-            pm25: '5', no2: '12', co: '0.2'
-        },
-        {
-            name: 'Zone Industrielle',
-            lat: 48.8450, lng: 2.3700,
-            aqi: 120, aqiLabel: 'Très Malsain', aqiColor: '#fbbf24',
-            desc: 'Tout le monde devrait réduire les efforts prolongés en extérieur. Émissions industrielles détectées.',
-            temp: '23°C', humidity: '38%', wind: '15k/h',
-            pm25: '35', no2: '58', co: '1.2'
-        }
-    ];
+    let leafletMap = null;
+    let activeEntry = null; // { marker, extra }
+    const panel = document.getElementById('detail-panel');
 
     function createMarkerIcon(color, isActive) {
         const s = isActive ? 44 : 34;
@@ -181,70 +140,87 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    let activeIdx = null;
-    const markers = [];
+    function openPanel(entry) {
+        const { marker, extra } = entry;
+        if (activeEntry) activeEntry.marker.setIcon(createMarkerIcon(activeEntry.extra.aqiColor, false));
+        activeEntry = entry;
+        marker.setIcon(createMarkerIcon(extra.aqiColor, true));
+        if (leafletMap) leafletMap.flyTo(marker.getLatLng(), 15, { duration: 0.7 });
 
-    stations.forEach(function (s, i) {
-        const m = L.marker([s.lat, s.lng], { icon: createMarkerIcon(s.aqiColor, false) }).addTo(map);
-        m.bindTooltip(s.name, {
-            direction: 'top', offset: [0, -20],
-            className: 'dark-tooltip'
-        });
-        m.on('click', () => openPanel(i));
-        markers.push(m);
-    });
-
-    const panel = document.getElementById('detail-panel');
-
-    window.openPanel = function (i) {
-        const s = stations[i];
-        if (activeIdx !== null) markers[activeIdx].setIcon(createMarkerIcon(stations[activeIdx].aqiColor, false));
-        activeIdx = i;
-        markers[i].setIcon(createMarkerIcon(s.aqiColor, true));
-        map.flyTo([s.lat, s.lng], 15, { duration: 0.7 });
-
-        document.getElementById('panel-station-name').textContent = s.name;
-        document.getElementById('panel-aqi-value').textContent = s.aqi;
-        document.getElementById('panel-aqi-label').textContent = s.aqiLabel;
-        document.getElementById('panel-aqi-label').style.color = s.aqiColor;
-        document.getElementById('panel-aqi-desc').textContent = s.desc;
-        document.getElementById('panel-aqi-bar').style.width = Math.min(s.aqi, 200) / 200 * 100 + '%';
-        document.getElementById('panel-aqi-bar').style.background = `linear-gradient(90deg,#1ab394,${s.aqiColor})`;
-        document.getElementById('panel-temp').textContent = s.temp;
-        document.getElementById('panel-humidity').textContent = s.humidity;
-        document.getElementById('panel-wind').textContent = s.wind;
-        document.getElementById('panel-pm25').textContent = s.pm25;
-        document.getElementById('panel-no2').textContent = s.no2;
-        document.getElementById('panel-co').textContent = s.co;
+        document.getElementById('panel-station-name').textContent = marker.options.title;
+        document.getElementById('panel-aqi-value').textContent = extra.aqi;
+        document.getElementById('panel-aqi-label').textContent = extra.aqiLabel;
+        document.getElementById('panel-aqi-label').style.color = extra.aqiColor;
+        document.getElementById('panel-aqi-desc').textContent = extra.desc;
+        document.getElementById('panel-aqi-bar').style.width = Math.min(extra.aqi, 200) / 200 * 100 + '%';
+        document.getElementById('panel-aqi-bar').style.background = `linear-gradient(90deg,#1ab394,${extra.aqiColor})`;
+        document.getElementById('panel-temp').textContent = extra.temp;
+        document.getElementById('panel-humidity').textContent = extra.humidity;
+        document.getElementById('panel-wind').textContent = extra.wind;
+        document.getElementById('panel-pm25').textContent = extra.pm25;
+        document.getElementById('panel-no2').textContent = extra.no2;
+        document.getElementById('panel-co').textContent = extra.co;
 
         panel.classList.add('open');
-    };
+    }
+
+    /* Inject custom divIcon before UX Map creates the Leaflet marker */
+    document.addEventListener('ux:map:marker:before-create', function (event) {
+        const { definition } = event.detail;
+        const color = definition.extra?.aqiColor ?? '#1ab394';
+        definition.bridgeOptions = { ...definition.bridgeOptions, icon: createMarkerIcon(color, false) };
+    });
+
+    /* Bind tooltip and panel click after the marker is created */
+    document.addEventListener('ux:map:marker:after-create', function (event) {
+        const { marker, definition } = event.detail;
+        const extra = definition.extra ?? {};
+        marker.bindTooltip(definition.title ?? '', { direction: 'top', offset: [0, -20], className: 'dark-tooltip' });
+        marker.on('click', () => openPanel({ marker, extra }));
+    });
+
+    /* Map ready: store instance, wire up controls */
+    document.addEventListener('ux:map:connect', function (event) {
+        leafletMap = event.detail.map;
+
+        const wrapper = document.getElementById('map-wrapper');
+        if (wrapper) {
+            new ResizeObserver(() => leafletMap.invalidateSize()).observe(wrapper);
+        }
+
+        document.getElementById('zoom-in')?.addEventListener('click', () => leafletMap.zoomIn());
+        document.getElementById('zoom-out')?.addEventListener('click', () => leafletMap.zoomOut());
+        document.getElementById('recenter')?.addEventListener('click', () => leafletMap.flyTo(CENTER, ZOOM, { duration: 0.7 }));
+
+        const style = document.createElement('style');
+        style.textContent = `
+            .dark-tooltip {
+                background: rgba(1,26,23,0.9) !important;
+                backdrop-filter: blur(14px);
+                border: 1px solid rgba(26,179,148,0.25) !important;
+                border-radius: 10px !important;
+                padding: 4px 12px !important;
+                font-family: 'DM Mono', monospace !important;
+                font-weight: 500 !important;
+                font-size: 11px !important;
+                color: #c0f3ea !important;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+                letter-spacing: 0.05em;
+            }
+            .dark-tooltip::before { display:none !important; }
+            .leaflet-container { background: #011a17 !important; }
+        `;
+        document.head.appendChild(style);
+    });
 
     window.closePanel = function () {
         panel.classList.remove('open');
-        if (activeIdx !== null) { markers[activeIdx].setIcon(createMarkerIcon(stations[activeIdx].aqiColor, false)); activeIdx = null; }
+        if (activeEntry) {
+            activeEntry.marker.setIcon(createMarkerIcon(activeEntry.extra.aqiColor, false));
+            activeEntry = null;
+        }
     };
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
-
-    const style = document.createElement('style');
-    style.textContent = `
-        .dark-tooltip {
-            background: rgba(1,26,23,0.9) !important;
-            backdrop-filter: blur(14px);
-            border: 1px solid rgba(26,179,148,0.25) !important;
-            border-radius: 10px !important;
-            padding: 4px 12px !important;
-            font-family: 'DM Mono', monospace !important;
-            font-weight: 500 !important;
-            font-size: 11px !important;
-            color: #c0f3ea !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
-            letter-spacing: 0.05em;
-        }
-        .dark-tooltip::before { display:none !important; }
-        .leaflet-container { background: #011a17 !important; }
-    `;
-    document.head.appendChild(style);
-});
+})();
 </script>

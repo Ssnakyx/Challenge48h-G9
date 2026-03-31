@@ -14,7 +14,7 @@ use Symfony\UX\Map\Point;
 
 class MapController extends AbstractController
 {
-    #[Route('/', name: 'app_map')]
+    #[Route('/map', name: 'app_map')]
     public function __invoke(): Response
     {
         $map = (new Map('default'))

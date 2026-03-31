@@ -1,0 +1,2 @@
+ux_map:
+    renderer: '%env(UX_MAP_DSN)%'
