@@ -14,9 +14,6 @@ class PollutionMeasurements
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id = null;
 
-    #[ORM\Column(type: Types::INTEGER)]
-    private ?int $geoPointId = null;
-
     #[ORM\Column(type: Types::FLOAT, nullable: true)]
     private ?float $pm10Value = null;
 
@@ -62,21 +59,12 @@ class PollutionMeasurements
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTime $createdAt = null;
 
+    #[ORM\ManyToOne(inversedBy: 'pollutionMeasurement')]
+    private ?GeoPoint $geoPoint = null;
+
     public function getId(): ?int
     {
         return $this->id;
-    }
-
-    public function getGeoPointId(): ?int
-    {
-        return $this->geoPointId;
-    }
-
-    public function setGeoPointId(int $geoPointId): static
-    {
-        $this->geoPointId = $geoPointId;
-
-        return $this;
     }
 
     public function getPm10Value(): ?float
@@ -255,6 +243,18 @@ class PollutionMeasurements
     public function setCreatedAt(\DateTime $createdAt): static
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getGeoPoint(): ?GeoPoint
+    {
+        return $this->geoPoint;
+    }
+
+    public function setGeoPoint(?GeoPoint $geoPoint): static
+    {
+        $this->geoPoint = $geoPoint;
 
         return $this;
     }

@@ -37,10 +37,15 @@ class HomeController extends AbstractController
             )
         ;
 
+
         foreach ($geoPoints as $geoPoint) {
+            $score =
             $map->addMarker(new Marker(
                 position: new Point($geoPoint->getLatitude(), $geoPoint->getLongitude()),
                 title: $geoPoint->getStationName(),
+                extra: array_diff_key(array_flip([
+                    'aqi' => '',
+                ])),
             ));
         }
 

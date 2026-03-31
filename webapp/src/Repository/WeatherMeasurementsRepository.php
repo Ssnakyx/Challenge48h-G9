@@ -16,28 +16,14 @@ class WeatherMeasurementsRepository extends ServiceEntityRepository
         parent::__construct($registry, WeatherMeasurements::class);
     }
 
-    //    /**
-    //     * @return WeatherMeasurements[] Returns an array of WeatherMeasurements objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('w')
-    //            ->andWhere('w.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('w.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
-
-    //    public function findOneBySomeField($value): ?WeatherMeasurements
-    //    {
-    //        return $this->createQueryBuilder('w')
-    //            ->andWhere('w.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    public function findByDate(\DateTime $date = new \DateTime()): array
+    {
+        return $this
+            ->createQueryBuilder('wm')
+            ->where('wm.date > :date')
+            ->setParameter('date', $date)
+            ->getQuery()
+            ->getResult()
+            ;
+    }
 }

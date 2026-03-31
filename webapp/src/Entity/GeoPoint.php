@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\GeoPointRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -34,6 +36,24 @@ class GeoPoint
 
     #[ORM\Column(type: Types::DATE_MUTABLE)]
     private ?\DateTime $createdAt = null;
+
+    /**
+     * @var Collection<int, PollutionMeasurements>
+     */
+    #[ORM\OneToMany(targetEntity: PollutionMeasurements::class, mappedBy: 'geoPoint')]
+    private Collection $pollutionMeasurements;
+
+    /**
+     * @var Collection<int, WeatherMeasurements>
+     */
+    #[ORM\OneToMany(targetEntity: WeatherMeasurements::class, mappedBy: 'geoPoint')]
+    private Collection $weatherMeasurements;
+
+    public function __construct()
+    {
+        $this->pollutionMeasurements = new ArrayCollection();
+        $this->weatherMeasurements = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -120,6 +140,66 @@ class GeoPoint
     public function setCreatedAt(?\DateTime $createdAt): static
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, PollutionMeasurements>
+     */
+    public function getPollutionMeasurements(): Collection
+    {
+        return $this->pollutionMeasurements;
+    }
+
+    public function addPollutionMeasurement(PollutionMeasurements $pollutionMeasurement): static
+    {
+        if (!$this->pollutionMeasurements->contains($pollutionMeasurement)) {
+            $this->pollutionMeasurements->add($pollutionMeasurement);
+            $pollutionMeasurement->setGeoPoint($this);
+        }
+
+        return $this;
+    }
+
+    public function removePollutionMeasurement(PollutionMeasurements $pollutionMeasurement): static
+    {
+        if ($this->pollutionMeasurements->removeElement($pollutionMeasurement)) {
+            // set the owning side to null (unless already changed)
+            if ($pollutionMeasurement->getGeoPoint() === $this) {
+                $pollutionMeasurement->setGeoPoint(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, WeatherMeasurements>
+     */
+    public function getWeatherMeasurements(): Collection
+    {
+        return $this->weatherMeasurements;
+    }
+
+    public function addWeatherMeasurement(WeatherMeasurements $weatherMeasurement): static
+    {
+        if (!$this->weatherMeasurements->contains($weatherMeasurement)) {
+            $this->weatherMeasurements->add($weatherMeasurement);
+            $weatherMeasurement->setGeoPoint($this);
+        }
+
+        return $this;
+    }
+
+    public function removeWeatherMeasurement(WeatherMeasurements $weatherMeasurement): static
+    {
+        if ($this->weatherMeasurements->removeElement($weatherMeasurement)) {
+            // set the owning side to null (unless already changed)
+            if ($weatherMeasurement->getGeoPoint() === $this) {
+                $weatherMeasurement->setGeoPoint(null);
+            }
+        }
 
         return $this;
     }
