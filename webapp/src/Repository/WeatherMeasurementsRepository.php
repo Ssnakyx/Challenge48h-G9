@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\GeoPoint;
 use App\Entity\WeatherMeasurements;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -16,12 +17,14 @@ class WeatherMeasurementsRepository extends ServiceEntityRepository
         parent::__construct($registry, WeatherMeasurements::class);
     }
 
-    public function findByDate(\DateTime $date = new \DateTime()): array
+    public function findByDateForGeoPoint(GeoPoint $geoPoint, \DateTime $date = new \DateTime()): array
     {
         return $this
             ->createQueryBuilder('wm')
-            ->where('wm.date > :date')
+            ->andWhere('wm.date > :date')
+            ->andWhere('wm.geoPoint = :geoPoint')
             ->setParameter('date', $date)
+            ->setParameter('geoPoint', $geoPoint)
             ->getQuery()
             ->getResult()
             ;
