@@ -1,1 +1,53 @@
 /.idea/
+
+# Environment variables (secrets)
+.env
+.env.local
+.env.*.local
+
+# Docker artifacts & cache
+docker-compose.override.yml
+.docker/
+
+# IDE & Editor
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Symfony
+/var/
+/vendor/
+.php-cs-fixer.cache
+.phpunit.result.cache
+
+# PostgreSQL (local volumes)
+postgres_data/
+postgres_master_data/
+postgres_slave_data/

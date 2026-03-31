@@ -1,0 +1,128 @@
+services:
+  webapp:
+    build: ./webapp
+    ports:
+      - "80:80"
+    environment:
+      APP_ENV: ${APP_ENV}
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-master:5432/${POSTGRES_DB}?serverVersion=15&charset=utf8
+      DATA_API_BASE_URL: ${DATA_API_BASE_URL}
+    depends_on:
+      - db-master
+      - data-api
+    networks:
+      - public_net
+      - private_net
+
+  data-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+    expose:
+      - "80"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-master:5432/${POSTGRES_DB}?serverVersion=15&charset=utf8
+    networks:
+      - private_net
+
+  data-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - /bin/sh
+      - -c
+      - |
+        while true; do
+          python -m data_pipeline --realtime --window-hours 360;
+          sleep 1800;
+        done
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db-master:5432/${POSTGRES_DB}?serverVersion=15&charset=utf8
+    networks:
+      - private_net
+
+  # ============================================================================
+  # PostgreSQL Master (Primary Database)
+  # ============================================================================
+  db-master:
+    image: bitnami/postgresql:latest
+    environment:
+      POSTGRESQL_USERNAME: ${POSTGRES_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRES_DB}
+      POSTGRESQL_REPLICATION_MODE: master
+      POSTGRESQL_REPLICATION_USER: ${POSTGRES_REPLICATION_USER}
+      POSTGRESQL_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD}
+      POSTGRESQL_WAL_LEVEL: replica
+      POSTGRESQL_MAX_WAL_SENDERS: 3
+      POSTGRESQL_MAX_REPLICATION_SLOTS: 3
+    volumes:
+      - postgres_master_data:/bitnami/postgresql
+    networks:
+      - private_net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # PostgreSQL Slave (Read Replica)
+  # ============================================================================
+  db-slave:
+    image: bitnami/postgresql:latest
+    environment:
+      POSTGRESQL_USERNAME: ${POSTGRES_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRES_DB}
+      POSTGRESQL_REPLICATION_MODE: slave
+      POSTGRESQL_MASTER_HOST: db-master
+      POSTGRESQL_REPLICATION_USER: ${POSTGRES_REPLICATION_USER}
+      POSTGRESQL_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD}
+    volumes:
+      - postgres_slave_data:/bitnami/postgresql
+    networks:
+      - private_net
+    depends_on:
+      - db-master
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # Netdata Monitoring & Observability
+  # ============================================================================
+  monitoring:
+    image: netdata/netdata:latest
+    ports:
+      - "19999:19999"
+    environment:
+      NETDATA_ANONYMOUS_TELEMETRY: "0"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor=unconfined
+    networks:
+      - public_net
+      - private_net
+
+networks:
+  public_net:
+    driver: bridge
+  private_net:
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres_master_data:
+  postgres_slave_data:

@@ -1,5 +1,9 @@
 
 services:
+  app:
+    ports:
+      - "8000:8000"
+
 ###> doctrine/doctrine-bundle ###
   database:
     ports:
