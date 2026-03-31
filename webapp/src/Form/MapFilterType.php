@@ -10,6 +10,7 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 class MapFilterType extends AbstractType
 {
@@ -24,14 +25,17 @@ class MapFilterType extends AbstractType
             ->add('indexMin', NumberType::class, [
                 'label' => 'Score minimum',
                 'required' => false,
+                'attr' => ['placeholder' => '0', 'min' => 0, 'max' => 100],
             ])
             ->add('indexMax', NumberType::class, [
                 'label' => 'Score maximum',
                 'required' => false,
+                'attr' => ['placeholder' => '100', 'min' => 0, 'max' => 100],
             ])
             ->add('searchArea', TextType::class, [
-                'label' => 'Zone de recherche ',
+                'label' => 'Rechercher une station',
                 'required' => false,
+                'attr' => ['placeholder' => 'Nom de station…'],
             ])
             ->add('submit', SubmitType::class, [
                 'label' => 'Filtrer',
@@ -43,6 +47,8 @@ class MapFilterType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => MapFilterData::class,
+            'method' => 'GET',
+            'csrf_protection' => false,
         ]);
     }
 }

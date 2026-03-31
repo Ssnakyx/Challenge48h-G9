@@ -86,6 +86,13 @@ class GeoPointRepository extends ServiceEntityRepository
             ;
         }
 
+        if ($data->searchArea != null && $data->searchArea !== '') {
+            $result
+                ->andWhere('LOWER(g.stationName) LIKE LOWER(:searchArea)')
+                ->setParameter('searchArea', '%' . $data->searchArea . '%')
+            ;
+        }
+
         return $result
             ->getQuery()
             ->getResult()
