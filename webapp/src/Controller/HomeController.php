@@ -66,8 +66,8 @@ class HomeController extends AbstractController
         $geoPoints = $this->geoPointRepository->findWithLatestMeasurementsByDay($mapFilterData);
 
         $map = new Map('default')
-            ->center(new Point(48.8566, 2.3522))
-            ->zoom(10)
+            ->center(new Point(46.6, 2.5))
+            ->zoom(6)
             ->options(new LeafletOptions()
                 ->tileLayer(new TileLayer(
                     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',

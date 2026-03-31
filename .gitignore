@@ -7,6 +7,8 @@
 
 # Docker artifacts & cache
 docker-compose.override.yml
+compose.override.yaml
+webapp/compose.override.yaml
 .docker/
 
 # IDE & Editor
