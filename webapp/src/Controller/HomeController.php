@@ -3,7 +3,11 @@
 namespace App\Controller;
 
 use App\Entity\GeoPoint;
+use App\Entity\PollutionMeasurements;
+use App\Entity\WeatherMeasurements;
 use App\Repository\GeoPointRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\ORM\Query\Expr\Math;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -15,19 +19,30 @@ use Symfony\UX\Map\Point;
 
 class HomeController extends AbstractController
 {
-    public function __construct(private readonly GeoPointRepository $geoPointRepository)
-    {
+    public function __construct(
+        private readonly GeoPointRepository $geoPointRepository,
+
+    ){
     }
 
     #[Route('/', name: 'app_home')]
     public function index(): Response
     {
+        $Colours = [ // pour extra.aqiColor
+            "#FF0000", // red
+            "#FF6600",
+            "#FFCC00", // yellow
+            "#CCFF00",
+            "#66FF00",
+            "#00FF00" // green
+        ];
+
         /** @var GeoPoint[] $geoPoints */
-        $geoPoints = $this->geoPointRepository->findAllGeoPoints();
+        $geoPoints = $this->geoPointRepository->findWithLatestMeasurementsByDay(new \DateTime());
 
         $map = new Map('default')
             ->center(new Point(48.8566, 2.3522))
-            ->zoom(13)
+            ->zoom(10)
             ->options(new LeafletOptions()
                 ->tileLayer(new TileLayer(
                     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -35,22 +50,49 @@ class HomeController extends AbstractController
                     options: ['subdomains' => 'abcd', 'maxZoom' => 19]
                 ))
             )
+            ->minZoom(6)
         ;
 
-
         foreach ($geoPoints as $geoPoint) {
-            $score =
+            /** @var PollutionMeasurements[] $pollMeasures */
+            $pollMeasures = [];
+            foreach($geoPoint->getPollutionMeasurements() as $pm) {
+                $pollMeasures[] = $pm->getScore();
+            }
+            $pollScore = array_sum($pollMeasures) / count($pollMeasures);
+            /** @var PollutionMeasurements $pollMeasure */
+            $pollMeasure = $geoPoint->getPollutionMeasurements()[0];
+
+            /** @var WeatherMeasurements[] $weatherMeasures */
+            $weatherMeasures = [];
+            foreach($geoPoint->getWeatherMeasurements() as $wm) {
+                $weatherMeasures[] = $wm->getScore();
+            }
+            $weatherScore = array_sum($weatherMeasures) / count($weatherMeasures);
+            $weatherMeasure = $geoPoint->getWeatherMeasurements()[0];
+
+            $newScore = min(round((($pollScore * 10) + $weatherScore) * 10 / 2), 100);
+            $colour = $Colours[$newScore / 100 * 6];
+
             $map->addMarker(new Marker(
                 position: new Point($geoPoint->getLatitude(), $geoPoint->getLongitude()),
                 title: $geoPoint->getStationName(),
-                extra: array_diff_key(array_flip([
-                    'aqi' => '',
-                ])),
+                extra: [
+                    'aqi' => $newScore,
+                    'aqiColor' => $colour,
+                    'temp' => $weatherMeasure->getTemperatureReal(),
+                    'humidity' =>$weatherMeasure->getHumidity(),
+                    'wind' => $weatherMeasure->getWindSpeed(),
+                    'pm25' => $pollMeasure->getPm25Value(),
+                    'no2' => $pollMeasure->getNo2Value(),
+                    'co'=> $pollMeasure->getCoValue()
+                ],
             ));
         }
 
         return $this->render('home/index.html.twig', [
             'map' => $map,
+            'stationsCount' => count($geoPoints)
         ]);
     }
 }
