@@ -5,10 +5,13 @@ namespace App\Controller;
 use App\Entity\GeoPoint;
 use App\Entity\PollutionMeasurements;
 use App\Entity\WeatherMeasurements;
+use App\Form\MapFilterType;
+use App\Model\MapFilterData;
 use App\Repository\GeoPointRepository;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Query\Expr\Math;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\UX\Map\Bridge\Leaflet\LeafletOptions;
@@ -19,26 +22,30 @@ use Symfony\UX\Map\Point;
 
 class HomeController extends AbstractController
 {
+    private const COLORS = [ // pour extra.aqiColor
+        "#FF0000", // red
+        "#FF6600",
+        "#FFCC00", // yellow
+        "#CCFF00",
+        "#66FF00",
+        "#00FF00" // green
+    ];
+
     public function __construct(
         private readonly GeoPointRepository $geoPointRepository,
-
     ){
     }
 
     #[Route('/', name: 'app_home')]
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $Colours = [ // pour extra.aqiColor
-            "#FF0000", // red
-            "#FF6600",
-            "#FFCC00", // yellow
-            "#CCFF00",
-            "#66FF00",
-            "#00FF00" // green
-        ];
+        $mapFilterData = new MapFilterData();
+
+        $form = $this->createForm(MapFilterType::class, $mapFilterData);
+        $form->handleRequest($request);
 
         /** @var GeoPoint[] $geoPoints */
-        $geoPoints = $this->geoPointRepository->findWithLatestMeasurementsByDay(new \DateTime());
+        $geoPoints = $this->geoPointRepository->findWithLatestMeasurementsByDay($mapFilterData);
 
         $map = new Map('default')
             ->center(new Point(48.8566, 2.3522))
@@ -72,7 +79,7 @@ class HomeController extends AbstractController
             $weatherMeasure = $geoPoint->getWeatherMeasurements()[0];
 
             $newScore = min(round((($pollScore * 10) + $weatherScore) * 10 / 2), 100);
-            $colour = $Colours[$newScore / 100 * 6];
+            $colour = self::COLORS[$newScore / 100 * 6];
 
             $map->addMarker(new Marker(
                 position: new Point($geoPoint->getLatitude(), $geoPoint->getLongitude()),
@@ -92,7 +99,8 @@ class HomeController extends AbstractController
 
         return $this->render('home/index.html.twig', [
             'map' => $map,
-            'stationsCount' => count($geoPoints)
+            'stationsCount' => count($geoPoints),
+            'form' => $form,
         ]);
     }
 }
