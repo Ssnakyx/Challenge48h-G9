@@ -1,0 +1,226 @@
+{# ── Scripts: Particles + Leaflet + Panel logic ── #}
+<script>
+/* ── Particle system (enhanced with mouse interaction) ── */
+(function () {
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+    let mouse = { x: -9999, y: -9999 };
+
+    function resize() {
+        W = canvas.width = window.innerWidth;
+        H = canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    document.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+
+    function createParticle() {
+        return {
+            x: Math.random() * W,
+            y: Math.random() * H,
+            r: Math.random() * 1.5 + 0.3,
+            vx: (Math.random() - 0.5) * 0.25,
+            vy: (Math.random() - 0.5) * 0.25,
+            alpha: Math.random() * 0.4 + 0.1,
+            baseAlpha: Math.random() * 0.4 + 0.1,
+            pulse: Math.random() * Math.PI * 2,
+        };
+    }
+    for (let i = 0; i < 110; i++) particles.push(createParticle());
+
+    let time = 0;
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        time += 0.01;
+
+        particles.forEach(p => {
+            /* Subtle pulsing alpha */
+            p.alpha = p.baseAlpha + Math.sin(time * 2 + p.pulse) * 0.1;
+
+            /* Mouse repulsion */
+            const mdx = p.x - mouse.x;
+            const mdy = p.y - mouse.y;
+            const mDist = Math.sqrt(mdx * mdx + mdy * mdy);
+            if (mDist < 150) {
+                const force = (150 - mDist) / 150 * 0.8;
+                p.vx += (mdx / mDist) * force * 0.3;
+                p.vy += (mdy / mDist) * force * 0.3;
+            }
+
+            /* Damping */
+            p.vx *= 0.99;
+            p.vy *= 0.99;
+
+            /* Add gentle drift */
+            p.vx += Math.sin(time + p.y * 0.01) * 0.003;
+            p.vy += Math.cos(time + p.x * 0.01) * 0.003;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r + Math.sin(time * 3 + p.pulse) * 0.3, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(26,179,148,${Math.max(0, p.alpha)})`;
+            ctx.fill();
+
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0 || p.x > W) p.vx *= -1;
+            if (p.y < 0 || p.y > H) p.vy *= -1;
+        });
+
+        /* Connection lines + brighter near mouse */
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 120) {
+                    const midX = (particles[i].x + particles[j].x) / 2;
+                    const midY = (particles[i].y + particles[j].y) / 2;
+                    const mmd = Math.sqrt((midX - mouse.x)**2 + (midY - mouse.y)**2);
+                    const boost = mmd < 200 ? 1.5 : 1;
+                    ctx.beginPath();
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.strokeStyle = `rgba(26,179,148,${0.08 * (1 - dist/120) * boost})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+})();
+
+/* ── Filter pills ── */
+document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', function () {
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+/* ── UX Map integration ── */
+(function () {
+    const CENTER = [48.8566, 2.3522];
+    const ZOOM = 13;
+
+    let leafletMap = null;
+    let activeEntry = null; // { marker, extra }
+    const panel = document.getElementById('detail-panel');
+
+    function createMarkerIcon(color, isActive) {
+        const s = isActive ? 44 : 34;
+        const inner = isActive ? 16 : 12;
+        return L.divIcon({
+            className: '',
+            iconSize: [s, s],
+            iconAnchor: [s/2, s/2],
+            html: `
+                <div style="width:${s}px;height:${s}px;position:relative;display:flex;align-items:center;justify-content:center;">
+                    ${isActive ? `
+                    <div style="position:absolute;inset:0;border-radius:50%;background:${color};opacity:0.18;animation:marker-pulse 2s ease-out infinite;"></div>
+                    <div style="position:absolute;inset:4px;border-radius:50%;background:${color};opacity:0.08;animation:marker-pulse 2s ease-out infinite 0.5s;"></div>
+                    ` : ''}
+                    <div style="
+                        width:${s}px;height:${s}px;border-radius:50%;
+                        background:rgba(1,26,23,0.85);
+                        border:2px solid ${color};
+                        box-shadow:0 0 ${isActive?20:10}px ${color}${isActive?'80':'40'},0 4px 16px rgba(0,0,0,0.4);
+                        display:flex;align-items:center;justify-content:center;
+                        transition:all 0.3s;
+                        ${isActive ? 'transform:scale(1.1);' : ''}
+                    ">
+                        <div style="width:${inner}px;height:${inner}px;border-radius:50%;background:${color};${isActive ? 'box-shadow:0 0 8px '+color : ''}"></div>
+                    </div>
+                </div>
+            `
+        });
+    }
+
+    function openPanel(entry) {
+        const { marker, extra } = entry;
+        if (activeEntry) activeEntry.marker.setIcon(createMarkerIcon(activeEntry.extra.aqiColor, false));
+        activeEntry = entry;
+        marker.setIcon(createMarkerIcon(extra.aqiColor, true));
+        if (leafletMap) leafletMap.flyTo(marker.getLatLng(), 15, { duration: 0.7 });
+
+        document.getElementById('panel-station-name').textContent = marker.options.title;
+        document.getElementById('panel-aqi-value').textContent = extra.aqi;
+        document.getElementById('panel-aqi-label').textContent = extra.aqiLabel;
+        document.getElementById('panel-aqi-label').style.color = extra.aqiColor;
+        document.getElementById('panel-aqi-desc').textContent = extra.desc;
+        document.getElementById('panel-aqi-bar').style.width = Math.min(extra.aqi, 200) / 200 * 100 + '%';
+        document.getElementById('panel-aqi-bar').style.background = `linear-gradient(90deg,#1ab394,${extra.aqiColor})`;
+        document.getElementById('panel-temp').textContent = extra.temp;
+        document.getElementById('panel-humidity').textContent = extra.humidity;
+        document.getElementById('panel-wind').textContent = extra.wind;
+        document.getElementById('panel-pm25').textContent = extra.pm25;
+        document.getElementById('panel-no2').textContent = extra.no2;
+        document.getElementById('panel-co').textContent = extra.co;
+
+        panel.classList.add('open');
+    }
+
+    /* Inject custom divIcon before UX Map creates the Leaflet marker */
+    document.addEventListener('ux:map:marker:before-create', function (event) {
+        const { definition } = event.detail;
+        const color = definition.extra?.aqiColor ?? '#1ab394';
+        definition.bridgeOptions = { ...definition.bridgeOptions, icon: createMarkerIcon(color, false) };
+    });
+
+    /* Bind tooltip and panel click after the marker is created */
+    document.addEventListener('ux:map:marker:after-create', function (event) {
+        const { marker, definition } = event.detail;
+        const extra = definition.extra ?? {};
+        marker.bindTooltip(definition.title ?? '', { direction: 'top', offset: [0, -20], className: 'dark-tooltip' });
+        marker.on('click', () => openPanel({ marker, extra }));
+    });
+
+    /* Map ready: store instance, wire up controls */
+    document.addEventListener('ux:map:connect', function (event) {
+        leafletMap = event.detail.map;
+
+        const wrapper = document.getElementById('map-wrapper');
+        if (wrapper) {
+            new ResizeObserver(() => leafletMap.invalidateSize()).observe(wrapper);
+        }
+
+        document.getElementById('zoom-in')?.addEventListener('click', () => leafletMap.zoomIn());
+        document.getElementById('zoom-out')?.addEventListener('click', () => leafletMap.zoomOut());
+        document.getElementById('recenter')?.addEventListener('click', () => leafletMap.flyTo(CENTER, ZOOM, { duration: 0.7 }));
+
+        const style = document.createElement('style');
+        style.textContent = `
+            .dark-tooltip {
+                background: rgba(1,26,23,0.9) !important;
+                backdrop-filter: blur(14px);
+                border: 1px solid rgba(26,179,148,0.25) !important;
+                border-radius: 10px !important;
+                padding: 4px 12px !important;
+                font-family: 'DM Mono', monospace !important;
+                font-weight: 500 !important;
+                font-size: 11px !important;
+                color: #c0f3ea !important;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
+                letter-spacing: 0.05em;
+            }
+            .dark-tooltip::before { display:none !important; }
+            .leaflet-container { background: #011a17 !important; }
+        `;
+        document.head.appendChild(style);
+    });
+
+    window.closePanel = function () {
+        panel.classList.remove('open');
+        if (activeEntry) {
+            activeEntry.marker.setIcon(createMarkerIcon(activeEntry.extra.aqiColor, false));
+            activeEntry = null;
+        }
+    };
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+})();
+</script>
