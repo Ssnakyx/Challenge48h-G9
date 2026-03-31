@@ -66,6 +66,8 @@ Lancer un run d'ingestion (fenêtre passée) :
 
 ```bash
 python -m app.data_pipeline --start-date 2024-01-01 --end-date 2024-01-03
+OR
+py -m app.data_pipeline --realtime --window-hours 6    
 ```
 
 Cela :
